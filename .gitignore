@@ -8,3 +8,5 @@ debian/files
 debian/tmp/composer.json
 debian/multiflexi-executor-docker.debhelper.log
 debian/multiflexi-executor.debhelper.log
+/nbproject/private/
+/.env
