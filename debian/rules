@@ -7,3 +7,11 @@
 
 %:
 	dh $@
+
+
+override_dh_install:
+	mkdir -p debian/tmp/
+	jq '.version = "'`dpkg-parsechangelog | sed -n 's/^Version: //p'| sed 's/~.*//'`'"'  debian/conf/composer.json |sponge debian/tmp/composer.json
+	dh_install
+	sed -i -e 's/.\.\/vendor/\/var\/lib\/composer\/multiflexi-executor/g' debian/multiflexi-executor*/usr/lib/multiflexi-executor/*.php
+	sed -i -e 's/\.\.\/\.env/\/etc\/multiflexi\/\multiflexi\.env/g' debian/multiflexi-executor*/usr/lib/multiflexi-executor/*.php

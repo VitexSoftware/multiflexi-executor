@@ -1,0 +1,46 @@
+{
+  "name": "vitexsoftware/multiflexi-executor",
+  "description": "Tool used to setup AbraFlexi multiinstance",
+  "type": "project",
+  "require": {
+    "deb/multiflexi-core": "*",
+    "symfony/process": "*",
+    "zarplata/zabbix-sender": "dev-master"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Vítězslav Dvořák",
+      "email": "info@vitexsoftware.cz"
+    }
+  ],
+  "config": {
+    "vendor-dir": "/var/lib/composer/multiflexi"
+  },
+  "minimum-stability": "dev",
+  "autoload": {
+    "psr-4": {
+      "MultiFlexi\\": "MultiFlexi",
+      "MultiFlexi\\Env\\": "MultiFlexi/Env",
+      "MultiFlexi\\Executor\\": "MultiFlexi/Executor"
+    }
+  },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "/usr/share/php/EaseCore/"
+    },
+    {
+      "type": "path",
+      "url": "/usr/share/php/MultiFlexi/"
+    },
+    {
+      "type": "path",
+      "url": "/usr/share/php/EaseFluentPDO/"
+    },
+    {
+      "type": "path",
+      "url": "/usr/share/php/EaseTWB4Widgets/"
+    }
+  ]
+}

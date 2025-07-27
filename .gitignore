@@ -9,3 +9,7 @@ debian/multiflexi-executor/
 debian/multiflexi-executor-docker/
 debian/multiflexi-executor.substvars
 debian/multiflexi-executor-docker.substvars
+debian/files
+debian/tmp/composer.json
+debian/multiflexi-executor-docker.debhelper.log
+debian/multiflexi-executor.debhelper.log
