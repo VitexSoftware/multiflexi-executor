@@ -1,0 +1,46 @@
+Source: multiflexi-executor
+Section: unknown
+Priority: optional
+Maintainer: Vítězslav Dvořák <info@vitexsoftware.cz>
+Build-Depends:
+ debhelper-compat (= 13),
+Standards-Version: 4.7.0
+Homepage: https://multiflexi.eu/
+Rules-Requires-Root: no
+Vcs-Git: https://github.com/VitexSoftware/multiflexi-executor.git
+Vcs-Browser: https://github.com/VitexSoftware/multiflexi-executor
+
+Package: multiflexi-executor
+Architecture: all
+Multi-Arch: foreign
+Depends:
+ ${misc:Depends},
+ multiflexi-database, php-vitexsoftware-multiflexi-core
+Suggests: multiflexi-cli, multiflexi-executor-docker
+Description: execute MultiFlexi jobs
+ Execute once scheduled job in MultiFlexi and store its
+ result.
+
+
+Package: multiflexi-executor-docker
+Multi-Arch: foreign
+Depends: ${misc:Depends},multiflexi, docker-ce-cli|docker.io
+Replaces: multiflexi-docker
+Architecture: all
+Description: Run MultiFlexi tasks in container
+ Run MultiFlexi tasks in Docker container
+
+#Package: multiflexi-executor-podman
+#Multi-Arch: foreign
+#Depends: ${misc:Depends},multiflexi, podman
+#Architecture: all
+#Description: Run MultiFlexi tasks in container
+# Run MultiFlexi tasks in container
+
+#Package: multiflexi-executor-kubernetes
+#Multi-Arch: foreign
+#Depends: ${misc:Depends},multiflexi, kubernetes-client
+#Architecture: all
+#Description: Run MultiFlexi tasks on Kubrnetes
+# Run MultiFlexi tasks in big corporation
+
