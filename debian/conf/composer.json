@@ -1,11 +1,10 @@
 {
   "name": "vitexsoftware/multiflexi-executor",
-  "description": "Tool used to setup AbraFlexi multiinstance",
+  "description": "Tool used to rune MuletiFlexi Jobs",
   "type": "project",
   "require": {
     "deb/multiflexi-core": "*",
-    "symfony/process": "*",
-    "zarplata/zabbix-sender": "dev-master"
+    "symfony/process": "*"
   },
   "license": "MIT",
   "authors": [
@@ -15,7 +14,7 @@
     }
   ],
   "config": {
-    "vendor-dir": "/var/lib/composer/multiflexi"
+    "vendor-dir": "/var/lib/composer/multiflexi-executor"
   },
   "minimum-stability": "dev",
   "autoload": {
@@ -37,10 +36,6 @@
     {
       "type": "path",
       "url": "/usr/share/php/EaseFluentPDO/"
-    },
-    {
-      "type": "path",
-      "url": "/usr/share/php/EaseTWB4Widgets/"
     }
   ]
 }

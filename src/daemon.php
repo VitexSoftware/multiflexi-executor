@@ -53,7 +53,7 @@ function waitForDatabase(): void
 
 waitForDatabase();
 $scheduler = new Scheduler();
-$scheduler->logBanner('MultiFlexi Daemon started');
+$scheduler->logBanner('MultiFlexi Executor Daemon started');
 
 do {
     try {
