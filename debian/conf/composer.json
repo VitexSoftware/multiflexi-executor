@@ -19,9 +19,6 @@
   "minimum-stability": "dev",
   "autoload": {
     "psr-4": {
-      "MultiFlexi\\": "MultiFlexi",
-      "MultiFlexi\\Env\\": "MultiFlexi/Env",
-      "MultiFlexi\\Executor\\": "MultiFlexi/Executor"
     }
   },
   "repositories": [
