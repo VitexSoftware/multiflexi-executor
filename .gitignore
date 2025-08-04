@@ -10,3 +10,4 @@ debian/multiflexi-executor-docker.debhelper.log
 debian/multiflexi-executor.debhelper.log
 /nbproject/private/
 /.env
+.build/php-cs-fixer/.php-cs-fixer.cache
