@@ -1,6 +1,7 @@
 # multiflexi-executor
 execute MultiFlexi jobs
 
+![Executor Logo](multiflexi-executor.svg?raw=true)
 
 MultiFlexi
 ----------
