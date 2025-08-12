@@ -15,12 +15,11 @@ declare(strict_types=1);
 
 namespace MultiFlexi;
 
-use Ease\Anonym;
 use Ease\Shared;
 
 require_once '../vendor/autoload.php';
 
-$options = getopt('r:o::e::', ['output::environment::']);
+$options = getopt('r:o::e::', ['runtemplate::output::environment::']);
 Shared::init(
     ['DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD'],
     \array_key_exists('environment', $options) ? $options['environment'] : (\array_key_exists('e', $options) ? $options['e'] : '../.env'),
@@ -42,7 +41,7 @@ if (strtolower(Shared::cfg('APP_DEBUG', 'false')) === 'true') {
 \define('EASE_LOGGER', implode('|', $loggers));
 $interval = $argc === 2 ? $argv[1] : null;
 \define('APP_NAME', 'MultiFlexi executor '.RunTemplate::codeToInterval($interval));
-Shared::user(new Anonym());
+Shared::user(new \MultiFlexi\UnixUser());
 
 $runTemplater = new \MultiFlexi\RunTemplate($runtempateId);
 
@@ -52,7 +51,7 @@ if (Shared::cfg('APP_DEBUG')) {
 
 if ($runTemplater->getMyKey()) {
     $jobber = new Job();
-    $jobber->prepareJob($runTemplater->getMyKey(), new ConfigFields('empty'), new \DateTime());
+    $jobber->prepareJob($runTemplater->getMyKey(), new ConfigFields('empty'), new \DateTime(), 'Native', 'CommandLine');
     $jobber->performJob();
 
     echo $jobber->executor->getOutput();
