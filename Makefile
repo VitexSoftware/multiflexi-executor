@@ -27,3 +27,15 @@ cs: ## Update Coding Standards
 autoload: ## Run composer autoload
 	composer update
 
+
+.PHONY: buildimage
+buildimage: ## Build container image for current Architecture
+	docker build -f Containerfile  -t vitexsoftware/multiflexi-executor:latest .
+
+.PHONY: buildx
+buildx: ## Build container image all architectures
+	docker buildx build  -f Containerfile  . --push --platform linux/arm/v7,linux/arm64/v8,linux/amd64 --tag vitexsoftware/multiflexi-executor:`dpkg-parsechangelog | sed -n 's/^Version: //p'| sed 's/~.*//'`
+
+.PHONY: drun
+drun: ## Run image using local docker
+	docker run  -f Containerfile --env-file .env vitexsoftware/multiflexi-executor:latest

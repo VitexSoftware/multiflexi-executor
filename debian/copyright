@@ -1,21 +1,13 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: multiflexi-executor
-Upstream-Contact: <preferred name and address to reach the upstream project>
-Source: <url://example.com>
-#
-# Please double check copyright with the licensecheck(1) command.
+Upstream-Contact: Vítězslav Dvořák <info@vitexsoftware.cz>
+Source: https://github.com/VitexSoftware/multiflexi-executor
 
-Files:     .gitignore
-           README.md
-Copyright: __NO_COPYRIGHT_NOR_LICENSE__
-License:   __NO_COPYRIGHT_NOR_LICENSE__
+Files: *
+Copyright: 2025 Vítězslav Dvořák <info@vitexsoftware.cz>
+License: MIT
 
-#----------------------------------------------------------------------------
-# Files marked as NO_LICENSE_TEXT_FOUND may be covered by the following
-# license/copyright files.
-
-#----------------------------------------------------------------------------
-# License file: LICENSE
+License: MIT
  MIT License
  .
  Copyright (c) 2025 Vitex Software

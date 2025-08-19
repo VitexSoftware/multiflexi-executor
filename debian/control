@@ -1,5 +1,5 @@
 Source: multiflexi-executor
-Section: unknown
+Section: web
 Priority: optional
 Maintainer: Vítězslav Dvořák <info@vitexsoftware.cz>
 Build-Depends:

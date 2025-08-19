@@ -1,6 +1,7 @@
-multiflexi-executor (0.1.0) UNRELEASED; urgency=low
+multiflexi-executor (0.1.0) unstable; urgency=low
 
-  * Initial release. Closes: #nnnn
-    <nnnn is the bug number of your ITP>
+  * Initial release of MultiFlexi Executor.
+  * Execute scheduled jobs in MultiFlexi and store results.
+  * Support for Docker container execution.
 
  -- Vítězslav Dvořák <info@vitexsoftware.cz>  Sun, 27 Jul 2025 09:58:29 +0200
