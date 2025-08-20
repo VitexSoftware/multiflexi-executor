@@ -1,3 +1,11 @@
+multiflexi-executor (0.1.1) unstable; urgency=medium
+
+  * Add parallel job execution in daemon via pcntl forks.
+  * Introduce MULTIFLEXI_MAX_PARALLEL to cap concurrent jobs.
+  * Update README with configuration and usage for parallel mode.
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Wed, 20 Aug 2025 13:58:35 +0200
+
 multiflexi-executor (0.1.0) unstable; urgency=low
 
   * Initial release of MultiFlexi Executor.

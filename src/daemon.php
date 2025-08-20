@@ -20,10 +20,10 @@ date_default_timezone_set('Europe/Prague');
 require_once '../vendor/autoload.php';
 \Ease\Shared::init(['DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD'], '../.env');
 $daemonize = (bool) \Ease\Shared::cfg('MULTIFLEXI_DAEMONIZE', true);
-$loggers = ['syslog', '\MultiFlexi\LogToSQL'];
+$loggers = ['syslog', '\\MultiFlexi\\LogToSQL'];
 
-if (\Ease\Shared::cfg('ZABBIX_SERVER') && \Ease\Shared::cfg('ZABBIX_HOST') && class_exists('\MultiFlexi\LogToZabbix')) {
-    $loggers[] = '\MultiFlexi\LogToZabbix';
+if (\Ease\Shared::cfg('ZABBIX_SERVER') && \Ease\Shared::cfg('ZABBIX_HOST') && class_exists('\\MultiFlexi\\LogToZabbix')) {
+    $loggers[] = '\\MultiFlexi\\LogToZabbix';
 }
 
 if (strtolower(\Ease\Shared::cfg('APP_DEBUG', 'false')) === 'true') {
@@ -34,6 +34,27 @@ if (strtolower(\Ease\Shared::cfg('APP_DEBUG', 'false')) === 'true') {
 \Ease\Shared::user(new \Ease\Anonym());
 
 $scheduler = null;
+
+// Optional async signals; we also explicitly reap to maintain our active children list
+if (function_exists('pcntl_async_signals')) {
+    pcntl_async_signals(true);
+}
+
+/**
+ * Reap finished child processes and update the active children map.
+ * @param array<int,int> $activeChildren pid => jobId
+ */
+function reapChildrenList(array &$activeChildren): void
+{
+    if (!function_exists('pcntl_waitpid')) {
+        return;
+    }
+    while (($pid = pcntl_waitpid(-1, $status, WNOHANG)) > 0) {
+        if (isset($activeChildren[$pid])) {
+            unset($activeChildren[$pid]);
+        }
+    }
+}
 
 function waitForDatabase(): void
 {
@@ -55,6 +76,9 @@ waitForDatabase();
 $scheduler = new Scheduler();
 $scheduler->logBanner('MultiFlexi Executor Daemon started');
 
+$maxParallel = (int) \Ease\Shared::cfg('MULTIFLEXI_MAX_PARALLEL', 0); // 0 or <1 means unlimited
+$activeChildren = [];
+
 do {
     try {
         $jobsToLaunch = $scheduler->getCurrentJobs();
@@ -71,21 +95,78 @@ do {
     }
 
     foreach ($jobsToLaunch as $scheduledJob) {
-        try {
-            $job = new Job($scheduledJob['job']);
-
-            if (empty($job->getData()) === false) {
-                $job->performJob();
-            } else {
-                $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
+        // If pcntl is available, fork a child per job to execute in parallel
+        if (function_exists('pcntl_fork')) {
+            // Respect concurrency limit if configured
+            if ($maxParallel > 0) {
+                // Try to reap finished children first
+                reapChildrenList($activeChildren);
+                while (count($activeChildren) >= $maxParallel) {
+                    // Wait briefly and keep reaping until a slot frees up
+                    reapChildrenList($activeChildren);
+                    usleep(100000); // 100ms
+                }
             }
 
-            $scheduler->deleteFromSQL($scheduledJob['id']);
-            $job->cleanUp();
-        } catch (\Throwable $e) {
-            error_log('Job error: '.$e->getMessage());
+            $pid = pcntl_fork();
+
+            if ($pid === -1) {
+                error_log('Failed to fork for job #'.$scheduledJob['job'].'; running synchronously.');
+                // Fallback to synchronous execution
+                try {
+                    $job = new Job($scheduledJob['job']);
+                    if (empty($job->getData()) === false) {
+                        $job->performJob();
+                    } else {
+                        $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
+                    }
+                    $scheduler->deleteFromSQL($scheduledJob['id']);
+                    $job->cleanUp();
+                } catch (\Throwable $e) {
+                    error_log('Job error: '.$e->getMessage());
+                }
+            } elseif ($pid === 0) {
+                // Child process: run the job and exit
+                try {
+                    $job = new Job($scheduledJob['job']);
+                    if (empty($job->getData()) === false) {
+                        $job->performJob();
+                    } else {
+                        $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
+                    }
+                    $scheduler->deleteFromSQL($scheduledJob['id']);
+                    $job->cleanUp();
+                } catch (\Throwable $e) {
+                    error_log('Job error (child): '.$e->getMessage());
+                }
+                // Ensure child terminates
+                exit(0);
+            } else {
+                // Parent: record active child and continue to next scheduled job (non-blocking)
+                $activeChildren[$pid] = (int) $scheduledJob['job'];
+                continue;
+            }
+        } else {
+            // pcntl not available: execute sequentially (original behavior)
+            try {
+                $job = new Job($scheduledJob['job']);
+
+                if (empty($job->getData()) === false) {
+                    $job->performJob();
+                } else {
+                    $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
+                }
+
+                $scheduler->deleteFromSQL($scheduledJob['id']);
+                $job->cleanUp();
+            } catch (\Throwable $e) {
+                error_log('Job error: '.$e->getMessage());
+            }
         }
     }
+
+    // Reap any finished children since last iteration to keep the active set accurate
+    reapChildrenList($activeChildren);
 
     if ($daemonize) {
         sleep(\Ease\Shared::cfg('MULTIFLEXI_CYCLE_PAUSE', 10));
