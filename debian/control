@@ -4,6 +4,8 @@ Priority: optional
 Maintainer: Vítězslav Dvořák <info@vitexsoftware.cz>
 Build-Depends:
  debhelper-compat (= 13),
+ jq,
+ moreutils
 Standards-Version: 4.7.0
 Homepage: https://multiflexi.eu/
 Rules-Requires-Root: no
