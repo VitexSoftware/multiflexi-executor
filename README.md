@@ -31,7 +31,6 @@ Common keys:
 - MULTIFLEXI_CYCLE_PAUSE=10            # seconds between polling cycles when daemonized
 - RESULT_FILE=php://stdout             # default output destination for one-shot runs
 - ZABBIX_SERVER, ZABBIX_HOST           # enable LogToZabbix if available
-- MULTIFLEXI_MAX_PARALLEL=0            # max concurrent jobs in daemon (0 or <1 = unlimited)
 
 Notes:
 - src/executor.php and src/daemon.php expect vendor/autoload.php and .env one directory above. Run them from src/ so relative paths resolve.
