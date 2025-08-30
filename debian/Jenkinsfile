@@ -116,11 +116,15 @@ distributions.each { distro ->
                             fi
                         '''
                     }
-                    publishDebToAptly()
                 }
+
             }
         }
     }
 }
 
 parallel branches
+
+stage('Publish to Aptly') {
+    publishDebToAptly()
+}
