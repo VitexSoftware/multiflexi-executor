@@ -63,7 +63,7 @@ distributions.each { distro ->
                             sh 'debuild-pbuilder  -i -us -uc -b'
                         }
                         timeout(time: 10, unit: 'MINUTES') {
-                            sh "mkdir -p \\$WORKSPACE/dist/debian/ ; rm -rf \\$WORKSPACE/dist/debian/* ; for deb in `cat debian/files | awk '{print $1}'`; do mv \"../$deb\" \\$WORKSPACE/dist/debian/; done"
+                            sh "mkdir -p \\$WORKSPACE/dist/debian/ ; rm -rf \\$WORKSPACE/dist/debian/* ; for deb in `cat debian/files | awk '{print \\$1}'`; do mv \"../\\$deb\" \\$WORKSPACE/dist/debian/; done"
                         }
                         artifacts = timeout(time: 10, unit: 'MINUTES') {
                                 sh (
