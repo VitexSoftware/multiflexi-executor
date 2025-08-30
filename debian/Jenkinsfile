@@ -94,6 +94,11 @@ distributions.each { distro ->
                                 """
                             }
                         }
+
+                        if (fileExists('debian/tests/control')) {
+                            sh "autopkgtest --null-mount ../*.changes"
+                        }
+
                     }
                 }
 
