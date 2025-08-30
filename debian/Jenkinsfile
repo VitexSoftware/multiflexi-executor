@@ -97,6 +97,9 @@ distributions.each { distro ->
                             fi
                         '''
                     }
+
+                    publishDebToAptly()
+
                 }
             }
         }
