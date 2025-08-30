@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 namespace MultiFlexi;
 
+use PhpParser\Node\Expr\AssignOp\Mul;
+
 date_default_timezone_set('Europe/Prague');
 
 require_once '../vendor/autoload.php';
@@ -60,7 +62,7 @@ function waitForDatabase(): void
 {
     while (true) {
         try {
-            $testScheduler = new Scheduler();
+            $testScheduler = new MultiThreadScheduler();
             $testScheduler->getCurrentJobs(); // Try a simple query
             unset($testScheduler);
 
@@ -73,13 +75,40 @@ function waitForDatabase(): void
 }
 
 waitForDatabase();
-$scheduler = new Scheduler();
+$scheduler = new MultiThreadScheduler();
 $scheduler->logBanner('MultiFlexi Executor Daemon started');
 
-$maxParallel = (int) \Ease\Shared::cfg('MULTIFLEXI_MAX_PARALLEL', 0); // 0 or <1 means unlimited
+$maxParallel = (int) \Ease\Shared::cfg('MULTIFLEXI_MAX_PARALLEL', 10); // 0 or <1 means unlimited
 $activeChildren = [];
 
 do {
+    // Monitoring: print current MySQL connections
+    try {
+        $dbType = strtolower(\Ease\Shared::cfg('DB_CONNECTION', 'mysql'));
+        if ($dbType === 'mysql' || $dbType === 'mariadb') {
+            $dbHost = \Ease\Shared::cfg('DB_HOST', 'localhost');
+            $dbPort = \Ease\Shared::cfg('DB_PORT', null);
+            $dbName = \Ease\Shared::cfg('DB_DATABASE', null);
+            $dbUser = \Ease\Shared::cfg('DB_USERNAME', null);
+            $dbPass = \Ease\Shared::cfg('DB_PASSWORD', null);
+            $dsn = "mysql:host={$dbHost};";
+            if ($dbPort) {
+                $dsn .= "port={$dbPort};";
+            }
+            $dsn .= "dbname={$dbName}";
+            $pdoOptions = [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+            ];
+            $pdo = new \PDO($dsn, $dbUser, $dbPass, $pdoOptions);
+            $stmt = $pdo->query("SHOW STATUS LIKE 'Threads_connected'");
+            $row = $stmt->fetch();
+            $activeConnections = $row['Value'] ?? 'unknown';
+            error_log('Current MySQL connections: ' . $activeConnections);
+            $pdo = null;
+        }
+    } catch (\Throwable $e) {
+        error_log('MySQL connection monitor error: ' . $e->getMessage());
+    }
     try {
         $jobsToLaunch = $scheduler->getCurrentJobs();
 
@@ -89,7 +118,7 @@ do {
     } catch (\Throwable $e) {
         error_log('Database error: '.$e->getMessage());
         waitForDatabase();
-        $scheduler = new Scheduler();
+        $scheduler = new MultiThreadScheduler();
 
         continue;
     }
@@ -114,7 +143,7 @@ do {
                 error_log('Failed to fork for job #'.$scheduledJob['job'].'; running synchronously.');
                 // Fallback to synchronous execution
                 try {
-                    $job = new Job($scheduledJob['job']);
+                    $job = new MultiThreadJob($scheduledJob['job']);
                     if (empty($job->getData()) === false) {
                         $job->performJob();
                     } else {
@@ -126,21 +155,38 @@ do {
                     error_log('Job error: '.$e->getMessage());
                 }
             } elseif ($pid === 0) {
-                // Child process: run the job and exit
-                try {
-                    $job = new Job($scheduledJob['job']);
-                    if (empty($job->getData()) === false) {
-                        $job->performJob();
-                    } else {
-                        $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
-                    }
-                    $scheduler->deleteFromSQL($scheduledJob['id']);
-                    $job->cleanUp();
-                } catch (\Throwable $e) {
-                    error_log('Job error (child): '.$e->getMessage());
-                }
-                // Ensure child terminates
-                exit(0);
+                    // Child process: run the job and exit
+                    $maxAttempts = 2;
+                        $attempt = 0;
+                        while ($attempt < $maxAttempts) {
+                            try {
+                                // Always create a fresh MultiThreadJob for each attempt
+                                $job = new MultiThreadJob($scheduledJob['job']);
+                                if (empty($job->getData()) === false) {
+                                    $job->performJob();
+                                } else {
+                                    $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
+                                }
+                                $scheduler->deleteFromSQL($scheduledJob['id']);
+                                $job->cleanUp();
+                                break; // success
+                            } catch (\PDOException $e) {
+                                if (strpos($e->getMessage(), 'MySQL server has gone away') !== false) {
+                                    error_log('Job error (child): MySQL server has gone away, reconnecting...');
+                                    sleep(2); // short pause before retry
+                                    $attempt++;
+                                    continue;
+                                } else {
+                                    error_log('Job error (child): '.$e->getMessage());
+                                    break;
+                                }
+                            } catch (\Throwable $e) {
+                                error_log('Job error (child): '.$e->getMessage());
+                                break;
+                            }
+                        }
+                    // Ensure child terminates
+                    exit(0);
             } else {
                 // Parent: record active child and continue to next scheduled job (non-blocking)
                 $activeChildren[$pid] = (int) $scheduledJob['job'];
@@ -149,7 +195,7 @@ do {
         } else {
             // pcntl not available: execute sequentially (original behavior)
             try {
-                $job = new Job($scheduledJob['job']);
+                $job = new MultiThreadJob($scheduledJob['job']);
 
                 if (empty($job->getData()) === false) {
                     $job->performJob();
