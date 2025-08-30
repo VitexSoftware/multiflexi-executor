@@ -1,16 +1,21 @@
 #!groovy
 
-// Current version of this Pipeline https://github.com/VitexSoftware/BuildImages/blob/main/Test/Jenkinsfile-parael
-
-String[] distributions = ['debian:bookworm', 'debian:trixie', 'debian:forky', 'ubuntu:jammy', 'ubuntu:noble']
+// List of target distributions
+String[] distributions = [
+    'debian:bookworm',
+    'debian:trixie',
+    'debian:forky',
+    'ubuntu:jammy',
+    'ubuntu:noble'
+]
 
 String vendor = 'vitexsoftware'
 String imagePrefix = 'multiflexi-'
-//String distroFamily = ''
 
 properties([
     copyArtifactPermission('*')
 ])
+
 node() {
     ansiColor('xterm') {
         stage('SCM Checkout') {
@@ -20,10 +25,11 @@ node() {
 }
 
 def branches = [:]
+
 distributions.each { distro ->
     branches[distro] = {
         def distroName = distro
-        println  "Dist:" + distroName
+        echo "=== Building for ${distroName} ==="
 
         def dist = distroName.split(':')
         def distroCode = dist[1]
@@ -33,90 +39,92 @@ distributions.each { distro ->
 
         node {
             ansiColor('xterm') {
-                stage('Checkout ' + distroName) {
+                stage("Checkout ${distroName}") {
                     checkout scm
-                    def imageName = vendor + '/' + imagePrefix + distroCode + ':latest'
+                    def imageName = "${vendor}/${imagePrefix}${distroCode}:latest"
                     buildImage = docker.image(imageName)
                     timeout(time: 10, unit: 'MINUTES') {
                         sh 'git checkout debian/changelog'
                     }
                     def version = timeout(time: 10, unit: 'MINUTES') {
-                        sh (
+                        sh(
                             script: 'dpkg-parsechangelog --show-field Version',
                             returnStdout: true
                         )
                     }.trim()
-                    buildVer = version + '.' + env.BUILD_NUMBER  + '~' + distroCode
+                    buildVer = "${version}.${env.BUILD_NUMBER}~${distroCode}"
+                    echo "Build version: ${buildVer}"
                 }
-                stage('Build ' + distroName) {
+
+                stage("Build ${distroName}") {
                     buildImage.inside {
                         timeout(time: 10, unit: 'MINUTES') {
-                            sh 'dch -b -v ' + buildVer  + ' "' + env.BUILD_TAG  + '"'
+                            sh "dch -b -v ${buildVer} \"${env.BUILD_TAG}\""
                         }
                         timeout(time: 10, unit: 'MINUTES') {
-                            sh 'sudo apt-get update --allow-releaseinfo-change'
+                            sh 'apt-get update --allow-releaseinfo-change'
                         }
                         timeout(time: 10, unit: 'MINUTES') {
-                            sh 'sudo chown jenkins:jenkins ..'
+                            sh 'chown jenkins:jenkins ..'
                         }
                         timeout(time: 10, unit: 'MINUTES') {
-                            sh 'debuild-pbuilder  -i -us -uc -b'
+                            sh 'debuild-pbuilder -i -us -uc -b'
                         }
                         timeout(time: 10, unit: 'MINUTES') {
                             sh '''
-mkdir -p $WORKSPACE/dist/debian/ ; rm -rf $WORKSPACE/dist/debian/* ; for deb in `cat debian/files | awk '{print $1}'`; do mv "../$deb" $WORKSPACE/dist/debian/; done
-'''
+                                mkdir -p $WORKSPACE/dist/debian/
+                                rm -rf $WORKSPACE/dist/debian/*
+                                for deb in $(awk '{print $1}' debian/files); do
+                                    mv "../$deb" $WORKSPACE/dist/debian/
+                                done
+                            '''
                         }
                         artifacts = timeout(time: 10, unit: 'MINUTES') {
-                                sh (
-                                    script: 'cat debian/files | awk '\''{print $1}'\'',
+                            sh(
+                                script: '''
+                                    awk '{print $1}' debian/files
+                                ''',
                                 returnStdout: true
                             )
                         }.trim().split('\n')
                     }
                 }
 
-                stage('Test ' + distroName) {
+                stage("Test ${distroName}") {
                     buildImage.inside {
-                        def debconf_debug = 0 //Set to "5" or "developer" to debug debconf
+                        def debconf_debug = 0
                         timeout(time: 10, unit: 'MINUTES') {
-                            sh 'cd $WORKSPACE/dist/debian/ ; dpkg-scanpackages . /dev/null > Packages; gzip -9c Packages > Packages.gz; cd $WORKSPACE'
+                            sh '''
+                                cd $WORKSPACE/dist/debian/
+                                dpkg-scanpackages . /dev/null > Packages
+                                gzip -9c Packages > Packages.gz
+                            '''
                         }
                         timeout(time: 10, unit: 'MINUTES') {
-                            sh 'echo "deb [trusted=yes] file://///$WORKSPACE/dist/debian/ ./" | sudo tee /etc/apt/sources.list.d/local.list'
+                            sh 'echo "deb [trusted=yes] file://///$WORKSPACE/dist/debian/ ./" | tee /etc/apt/sources.list.d/local.list'
                         }
                         timeout(time: 10, unit: 'MINUTES') {
-                            sh 'sudo apt-get update --allow-releaseinfo-change'
-                        }
-                        timeout(time: 10, unit: 'MINUTES') {
-                            sh 'echo "INSTALATION"'
+                            sh 'apt-get update --allow-releaseinfo-change'
                         }
                         artifacts.each { deb_file ->
                             if (deb_file.endsWith('.deb')) {
                                 def pkgName = deb_file.tokenize('/')[-1].replaceFirst(/_.*/, '')
                                 timeout(time: 10, unit: 'MINUTES') {
-                                    sh 'echo -e "${GREEN} installing ' + pkgName + ' on `lsb_release -sc` ${ENDCOLOR} "'
+                                    echo "Installing ${pkgName} on $(lsb_release -sc)"
                                 }
                                 timeout(time: 10, unit: 'MINUTES') {
-                                    sh 'sudo DEBIAN_FRONTEND=noninteractive DEBCONF_DEBUG=' + debconf_debug + ' apt-get -y install ' + pkgName + ' || sudo apt-get -y -f install'
+                                    sh "DEBIAN_FRONTEND=noninteractive DEBCONF_DEBUG=${debconf_debug} apt-get -y install ${pkgName} || apt-get -y -f install"
                                 }
                             }
                         }
                     }
                 }
-                stage('Archive artifacts ' + distroName ) {
-                    // Only run if previous stages (Build and Test) succeeded
-                    buildImage.inside {
-                        // Archive all produced artifacts listed in debian/files
-                        artifacts.each { deb_file ->
-                            println "Archiving artifact: " + deb_file
-                            timeout(time: 10, unit: 'MINUTES') {
-                                archiveArtifacts artifacts: 'dist/debian/' + deb_file
-                            }
-                        }
 
-                        // Cleanup: remove any produced files named in debian/files
-                        // Try both the dist location and any potential original locations referenced by debian/files
+                stage("Archive artifacts ${distroName}") {
+                    buildImage.inside {
+                        timeout(time: 10, unit: 'MINUTES') {
+                            archiveArtifacts artifacts: 'dist/debian/*.deb'
+                        }
                         timeout(time: 10, unit: 'MINUTES') {
                             sh '''
                                 set -e
@@ -131,12 +139,11 @@ mkdir -p $WORKSPACE/dist/debian/ ; rm -rf $WORKSPACE/dist/debian/* ; for deb in 
                             '''
                         }
                     }
-
                     publishDebToAptly()
-
                 }
             }
         }
     }
 }
+
 parallel branches
