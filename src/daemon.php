@@ -156,6 +156,9 @@ do {
                 }
             } elseif ($pid === 0) {
                     // Child process: run the job and exit
+                    // Disconnect from parent's database connection
+                    $scheduler = null;
+
                     $maxAttempts = 2;
                         $attempt = 0;
                         while ($attempt < $maxAttempts) {
@@ -167,7 +170,8 @@ do {
                                 } else {
                                     $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
                                 }
-                                $scheduler->deleteFromSQL($scheduledJob['id']);
+                                $childScheduler = new MultiThreadScheduler();
+                                $childScheduler->deleteFromSQL($scheduledJob['id']);
                                 $job->cleanUp();
                                 break; // success
                             } catch (\PDOException $e) {
@@ -177,11 +181,11 @@ do {
                                     $attempt++;
                                     continue;
                                 } else {
-                                    error_log('Job error (child): '.$e->getMessage());
+                                    error_log('Job error (child): ' . $e->getMessage());
                                     break;
                                 }
                             } catch (\Throwable $e) {
-                                error_log('Job error (child): '.$e->getMessage());
+                                error_log('Job error (child): ' . $e->getMessage());
                                 break;
                             }
                         }
