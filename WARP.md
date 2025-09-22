@@ -40,7 +40,8 @@ Note: src/executor.php and src/daemon.php expect vendor/autoload.php and a .env 
 
 Configuration and environment
 - Place a .env file at the repository root. The executor reads DB and app settings via Ease\Shared from that file.
-- Expected keys include (driven by MultiFlexi core): DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, APP_DEBUG, MULTIFLEXI_DAEMONIZE, MULTIFLEXI_CYCLE_PAUSE, RESULT_FILE, ZABBIX_SERVER, ZABBIX_HOST.
+- Expected keys include (driven by MultiFlexi core): DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_PERSISTENT, APP_DEBUG, MULTIFLEXI_DAEMONIZE, MULTIFLEXI_CYCLE_PAUSE, MULTIFLEXI_MAX_PARALLEL, RESULT_FILE, ZABBIX_SERVER, ZABBIX_HOST.
+- **Critical**: Set DB_PERSISTENT=false for multithread safety to prevent database connection sharing between processes.
 - Logging is configured via EASE_LOGGER, automatically assembled based on env and available classes: syslog | \MultiFlexi\LogToSQL | optional \MultiFlexi\LogToZabbix | console (when APP_DEBUG=true).
 
 High-level architecture and flow
@@ -54,6 +55,9 @@ High-level architecture and flow
     - Initializes config; waits for DB availability (retry loop) before starting.
     - Main loop:
       - Scheduler::getCurrentJobs() fetches due jobs; for each, instantiate Job, performJob, then clean up and delete the schedule record.
+      - **Parallel execution**: Uses pcntl_fork() to run jobs in isolated child processes with dedicated database connections.
+      - **Connection isolation**: Child processes use MultiThreadJob and MultiThreadScheduler classes with isolated PDO connections.
+      - **Error handling**: Automatic reconnection and retry logic for database connection failures.
       - On DB errors, re-enter wait-for-DB and recreate Scheduler.
       - Sleep between cycles when MULTIFLEXI_DAEMONIZE=true.
 - Binaries (bin/): installation targets provide shell wrappers that call the installed PHP entrypoint under /usr/lib/multiflexi-executor; for development, use the src/*.php scripts as shown above.

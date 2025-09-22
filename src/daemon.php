@@ -156,14 +156,33 @@ do {
                 }
             } elseif ($pid === 0) {
                     // Child process: run the job and exit
-                    // Disconnect from parent's database connection
+                    // CRITICAL: Completely isolate database connections in child process
+                    
+                    // 1. Close parent scheduler connections
+                    if ($scheduler && $scheduler->pdo) {
+                        $scheduler->pdo = null;
+                    }
+                    if ($scheduler && $scheduler->fluent) {
+                        $scheduler->fluent = null;
+                    }
                     $scheduler = null;
+                    
+                    // 2. Set environment variables to force new connections in child process
+                    putenv('MULTIFLEXI_FORCE_NEW_DB_CONNECTION=1');
+                    putenv('MULTIFLEXI_CHILD_PROCESS=' . getmypid());
+                    putenv('DB_PERSISTENT=false');  // Disable persistent connections in child processes
+                    
+                    // 3. Force garbage collection to close connections
+                    gc_collect_cycles();
+                    
+                    // Small delay to ensure complete connection cleanup
+                    usleep(50000); // 50ms
 
                     $maxAttempts = 2;
                         $attempt = 0;
                         while ($attempt < $maxAttempts) {
                             try {
-                                // Always create a fresh MultiThreadJob for each attempt
+                                // Create fresh instances with new database connections
                                 $job = new MultiThreadJob($scheduledJob['job']);
                                 if (empty($job->getData()) === false) {
                                     $job->performJob();
@@ -173,18 +192,49 @@ do {
                                 $childScheduler = new MultiThreadScheduler();
                                 $childScheduler->deleteFromSQL($scheduledJob['id']);
                                 $job->cleanUp();
+                                
+                                // Clean up child connections before exit
+                                $childScheduler->pdo = null;
+                                $childScheduler->fluent = null;
+                                $job->pdo = null;
+                                $job->fluent = null;
+                                
                                 break; // success
                             } catch (\PDOException $e) {
-                                if (strpos($e->getMessage(), 'MySQL server has gone away') !== false) {
-                                    error_log('Job error (child): MySQL server has gone away, reconnecting...');
-                                    sleep(2); // short pause before retry
+                                $errorCode = $e->getCode();
+                                $errorMessage = $e->getMessage();
+                                
+                                // MySQL connection errors that warrant a retry
+                                $retryableErrors = [
+                                    'MySQL server has gone away',
+                                    'Premature end of data',
+                                    'Packets out of order',
+                                    'Lost connection to MySQL server',
+                                    'Connection refused',
+                                    'Can\'t connect to MySQL server',
+                                    'Too many connections'
+                                ];
+                                
+                                // Check for retryable error codes (MySQL specific)
+                                $retryableErrorCodes = [2006, 2013, 1040, 1205]; // CR_SERVER_GONE_ERROR, CR_SERVER_LOST, ER_CON_COUNT_ERROR, ER_LOCK_WAIT_TIMEOUT
+                                
+                                $shouldRetry = in_array($errorCode, $retryableErrorCodes) || 
+                                               array_reduce($retryableErrors, function($carry, $errorPattern) use ($errorMessage) {
+                                                   return $carry || strpos($errorMessage, $errorPattern) !== false;
+                                               }, false);
+                                
+                                if ($shouldRetry && $attempt < $maxAttempts - 1) {
+                                    error_log('Job error (child): Database connection issue (Code: ' . $errorCode . '), attempt ' . ($attempt + 1) . ': ' . $errorMessage);
+                                    // Progressive backoff with some randomness to avoid thundering herd
+                                    $backoffTime = (1 + $attempt) + (random_int(0, 1000) / 1000);
+                                    usleep((int)($backoffTime * 1000000)); // Convert to microseconds
                                     $attempt++;
                                     continue;
                                 } else {
-                                    error_log('Job error (child): ' . $e->getMessage());
+                                    error_log('Job error (child): ' . $errorMessage . ' (Code: ' . $errorCode . ')');
                                     break;
                                 }
-                            } catch (\Throwable $e) {
+                            }
                                 error_log('Job error (child): ' . $e->getMessage());
                                 break;
                             }
@@ -219,7 +269,7 @@ do {
     reapChildrenList($activeChildren);
 
     if ($daemonize) {
-        sleep(\Ease\Shared::cfg('MULTIFLEXI_CYCLE_PAUSE', 10));
+        sleep((int) \Ease\Shared::cfg('MULTIFLEXI_CYCLE_PAUSE', 10));
     }
 } while ($daemonize);
 
