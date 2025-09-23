@@ -1,11 +1,13 @@
 <?php
+declare(strict_types=1);
+
 namespace MultiFlexi;
+
 /**
- * Description of MultiThreadJob
- *
- * @author Vitex <info@vitexsoftware.cz> 
+ * Job variant that owns its own PDO/FluentPDO handles for execution in forked children.
  */
-class MultiThreadJob extends \MultiFlexi\Job {
+class MultiThreadJob extends \MultiFlexi\Job
+{
 	/** @var null|\PDO */
 	public null|\PDO $pdo = null;
 	/** @var null|\Envms\FluentPDO\Query */
