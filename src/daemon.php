@@ -141,66 +141,66 @@ do {
                     usleep(50000); // 50ms
 
                     $maxAttempts = 2;
-                        $attempt = 0;
-                        while ($attempt < $maxAttempts) {
-                            try {
-                                // Create fresh instances with new database connections
-                                $job = new MultiThreadJob($scheduledJob['job']);
-                                if (empty($job->getData()) === false) {
-                                    $job->performJob();
-                                } else {
-                                    $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
-                                }
-                                $childScheduler = new MultiThreadScheduler();
-                                $childScheduler->deleteFromSQL($scheduledJob['id']);
-                                $job->cleanUp();
-                                
-                                // Clean up child connections before exit
-                                $childScheduler->pdo = null;
-                                $childScheduler->fluent = null;
-                                $job->pdo = null;
-                                $job->fluent = null;
-                                
-                                break; // success
-                            } catch (\PDOException $e) {
-                                $errorCode = $e->getCode();
-                                $errorMessage = $e->getMessage();
-                                
-                                // MySQL connection errors that warrant a retry
-                                $retryableErrors = [
-                                    'MySQL server has gone away',
-                                    'Premature end of data',
-                                    'Packets out of order',
-                                    'Lost connection to MySQL server',
-                                    'Connection refused',
-                                    'Can\'t connect to MySQL server',
-                                    'Too many connections'
-                                ];
-                                
-                                // Check for retryable error codes (MySQL specific)
-                                $retryableErrorCodes = [2006, 2013, 1040, 1205]; // CR_SERVER_GONE_ERROR, CR_SERVER_LOST, ER_CON_COUNT_ERROR, ER_LOCK_WAIT_TIMEOUT
-                                
-                                $shouldRetry = in_array($errorCode, $retryableErrorCodes) || 
-                                               array_reduce($retryableErrors, function($carry, $errorPattern) use ($errorMessage) {
-                                                   return $carry || strpos($errorMessage, $errorPattern) !== false;
-                                               }, false);
-                                
-                                if ($shouldRetry && $attempt < $maxAttempts - 1) {
-                                    error_log('Job error (child): Database connection issue (Code: ' . $errorCode . '), attempt ' . ($attempt + 1) . ': ' . $errorMessage);
-                                    // Progressive backoff with some randomness to avoid thundering herd
-                                    $backoffTime = (1 + $attempt) + (random_int(0, 1000) / 1000);
-                                    usleep((int)($backoffTime * 1000000)); // Convert to microseconds
-                                    $attempt++;
-                                    continue;
-                                } else {
-                                    error_log('Job error (child): ' . $errorMessage . ' (Code: ' . $errorCode . ')');
-                                    break;
-                                }
+                    $attempt = 0;
+                    while ($attempt < $maxAttempts) {
+                        try {
+                            // Create fresh instances with new database connections
+                            $job = new MultiThreadJob($scheduledJob['job']);
+                            if (empty($job->getData()) === false) {
+                                $job->performJob();
+                            } else {
+                                $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
                             }
-                                error_log('Job error (child): ' . $e->getMessage());
+                            $childScheduler = new MultiThreadScheduler();
+                            $childScheduler->deleteFromSQL($scheduledJob['id']);
+                            $job->cleanUp();
+                            
+                            // Clean up child connections before exit
+                            $childScheduler->pdo = null;
+                            $childScheduler->fluent = null;
+                            $job->pdo = null;
+                            $job->fluent = null;
+                            
+                            break; // success
+                        } catch (\PDOException $e) {
+                            $errorCode = $e->getCode();
+                            $errorMessage = $e->getMessage();
+                            
+                            // MySQL connection errors that warrant a retry
+                            $retryableErrors = [
+                                'MySQL server has gone away',
+                                'Premature end of data',
+                                'Packets out of order',
+                                'Lost connection to MySQL server',
+                                'Connection refused',
+                                'Can\'t connect to MySQL server',
+                                'Too many connections'
+                            ];
+                            
+                            // Check for retryable error codes (MySQL specific)
+                            $retryableErrorCodes = [2006, 2013, 1040, 1205]; // CR_SERVER_GONE_ERROR, CR_SERVER_LOST, ER_CON_COUNT_ERROR, ER_LOCK_WAIT_TIMEOUT
+                            
+                            $shouldRetry = in_array($errorCode, $retryableErrorCodes) || 
+                                           array_reduce($retryableErrors, function($carry, $errorPattern) use ($errorMessage) {
+                                               return $carry || strpos($errorMessage, $errorPattern) !== false;
+                                           }, false);
+                            
+                            if ($shouldRetry && $attempt < $maxAttempts - 1) {
+                                error_log('Job error (child): Database connection issue (Code: ' . $errorCode . '), attempt ' . ($attempt + 1) . ': ' . $errorMessage);
+                                // Progressive backoff with some randomness to avoid thundering herd
+                                $backoffTime = (1 + $attempt) + (random_int(0, 1000) / 1000);
+                                usleep((int)($backoffTime * 1000000)); // Convert to microseconds
+                                $attempt++;
+                                continue;
+                            } else {
+                                error_log('Job error (child): ' . $errorMessage . ' (Code: ' . $errorCode . ')');
                                 break;
                             }
+                        } catch (\Throwable $e) {
+                            error_log('Job error (child): ' . $e->getMessage());
+                            break;
                         }
+                    }
                     // Ensure child terminates
                     exit(0);
             } else {
