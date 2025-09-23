@@ -12,6 +12,8 @@ When writing code, always include a docblock for functions and classes, describi
 
 When writing tests, use PHPUnit and follow the PSR-12 coding standard.
 
+When writing documentation, use MarkDown format.
+
 When writing commit messages, use the imperative mood and keep them concise.
 
 When writing code comments, use complete sentences and proper grammar.

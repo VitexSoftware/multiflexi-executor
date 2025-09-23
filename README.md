@@ -26,15 +26,18 @@ Place a .env file at the repository root. The executor reads configuration via E
 
 Common keys:
 - DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+- DB_PERSISTENT=false                  # disable persistent connections for multithread safety (recommended)
 - APP_DEBUG=true|false
 - MULTIFLEXI_DAEMONIZE=true|false
 - MULTIFLEXI_CYCLE_PAUSE=10            # seconds between polling cycles when daemonized
 - RESULT_FILE=php://stdout             # default output destination for one-shot runs
 - ZABBIX_SERVER, ZABBIX_HOST           # enable LogToZabbix if available
+- MULTIFLEXI_MAX_PARALLEL=5            # max concurrent jobs in daemon (0 or <1 = unlimited, recommended: 5-10)
 
 Notes:
 - src/executor.php and src/daemon.php expect vendor/autoload.php and .env one directory above. Run them from src/ so relative paths resolve.
 - Parallel execution requires the pcntl extension. On Debian-based systems install the package matching your PHP version (e.g., php8.3-pcntl).
+- **Database Connection Safety**: Set `DB_PERSISTENT=false` to prevent connection sharing issues in multithread mode. The executor uses isolated connections for each child process to avoid "MySQL server has gone away" errors.
 
 ## Usage
 ### One-shot execution (run a single RunTemplate)
@@ -88,6 +91,33 @@ Run a single test file or filtered tests:
 vendor/bin/phpunit path/to/TestFile.php
 vendor/bin/phpunit --filter "TestNameOrRegex"
 ```
+
+## Troubleshooting
+
+### Database Connection Issues
+If you encounter database connection errors like "MySQL server has gone away", "Premature end of data", or "Packets out of order":
+
+1. **Ensure `DB_PERSISTENT=false`** in your .env file (required for multithread safety)
+2. **Limit concurrent jobs** with `MULTIFLEXI_MAX_PARALLEL=5` (or lower if you have limited database connections)
+3. **Check MySQL configuration**:
+   ```sql
+   SHOW VARIABLES LIKE 'max_connections';
+   SHOW VARIABLES LIKE 'wait_timeout';
+   SHOW STATUS LIKE 'Threads_connected';
+   ```
+4. **Monitor connection usage**: The daemon logs current MySQL connections during operation
+5. **Increase MySQL limits** if needed:
+   ```ini
+   # /etc/mysql/mysql.conf.d/mysqld.cnf
+   max_connections = 200
+   wait_timeout = 300
+   ```
+
+The executor automatically:
+- Validates connections before each database operation
+- Reconnects on connection failures
+- Uses progressive backoff for retry attempts
+- Isolates database connections in child processes
 
 ## Scheduling example (via CLI)
 The repo includes an integration-oriented script under tests/ that schedules a RunTemplate using multiflexi-cli:
