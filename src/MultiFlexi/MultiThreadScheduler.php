@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace MultiFlexi;
 
+/**
+ * Scheduler variant that owns its own PDO/FluentPDO handles for use in forked children.
+ *
+ * @internal Spawns connections based on DB_* env settings.
+ */
 class MultiThreadScheduler extends \MultiFlexi\Scheduler
 {
-    /** @var null|\PDO */
-    public null|\PDO $pdo = null;
-    /** @var null|\Envms\FluentPDO\Query */
-    public null|\Envms\FluentPDO\Query $fluent = null;
+    public ?\PDO $pdo = null;
+    public ?\Envms\FluentPDO\Query $fluent = null;
 
     public function __construct()
     {
