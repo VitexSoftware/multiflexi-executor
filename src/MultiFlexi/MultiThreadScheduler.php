@@ -2,14 +2,25 @@
 
 declare(strict_types=1);
 
+/**
+ * This file is part of the MultiFlexi package
+ *
+ * https://multiflexi.eu/
+ *
+ * (c) Vítězslav Dvořák <http://vitexsoftware.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace MultiFlexi;
 
 /**
  * Scheduler variant that owns its own PDO/FluentPDO handles for use in forked children.
  *
- * @internal Spawns connections based on DB_* env settings.
+ * @internal spawns connections based on DB_* env settings
  */
-class MultiThreadScheduler extends \MultiFlexi\Scheduler
+final class MultiThreadScheduler extends \MultiFlexi\Scheduler
 {
     public ?\PDO $pdo = null;
     public ?\Envms\FluentPDO\Query $fluent = null;
@@ -18,17 +29,61 @@ class MultiThreadScheduler extends \MultiFlexi\Scheduler
     {
         // CRITICAL: Disable persistent connections in multithread environment
         putenv('DB_PERSISTENT=false');
-        
+
         // CRITICAL: Must create database connection BEFORE calling parent constructor
         // to prevent using inherited connections
         $this->createFreshConnection();
-        
+
         // Call parent constructor - it should use our fresh connection
         parent::__construct();
     }
-    
+
+    public function __destruct()
+    {
+        // Korektní uzavření PDO spojení
+        if ($this->pdo instanceof \PDO) {
+            $this->pdo = null;
+        }
+
+        $this->fluent = null;
+    }
+
     /**
-     * Create a fresh database connection for this instance
+     * Override parent getPdo() to use our connection with validation.
+     *
+     * @param mixed $properties
+     */
+    public function getPdo($properties = [])
+    {
+        if (!$this->isConnectionAlive()) {
+            error_log('MultiThreadScheduler: Reconnecting to database...');
+            $this->pdo = null;
+            $this->fluent = null;
+            $this->createFreshConnection();
+        }
+
+        return $this->pdo;
+    }
+
+    /**
+     * Override parent getFluentPDO() to use our connection.
+     */
+    public function getFluentPDO(bool $read = false, bool $write = false)
+    {
+        if (!$this->fluent instanceof \Envms\FluentPDO\Query) {
+            if (!$this->pdo instanceof \PDO) {
+                $this->createFreshConnection();
+            }
+
+            $this->fluent = new \Envms\FluentPDO\Query($this->pdo);
+            $this->fluent->exceptionOnError = true;
+        }
+
+        return $this->fluent;
+    }
+
+    /**
+     * Create a fresh database connection for this instance.
      */
     private function createFreshConnection(): void
     {
@@ -39,33 +94,37 @@ class MultiThreadScheduler extends \MultiFlexi\Scheduler
         $dbUser = \Ease\Shared::cfg('DB_USERNAME', null);
         $dbPass = \Ease\Shared::cfg('DB_PASSWORD', null);
         $dsn = '';
-        
+
         if ($dbType === 'mysql' || $dbType === 'mariadb') {
             $dsn = "mysql:host={$dbHost};";
+
             if ($dbPort) {
                 $dsn .= "port={$dbPort};";
             }
+
             $dsn .= "dbname={$dbName}";
         } elseif ($dbType === 'pgsql' || $dbType === 'postgresql') {
             $dsn = "pgsql:host={$dbHost};";
+
             if ($dbPort) {
                 $dsn .= "port={$dbPort};";
             }
+
             $dsn .= "dbname={$dbName}";
         } elseif ($dbType === 'sqlite') {
-            $dsn = "sqlite:" . ($dbName ?: ':memory:');
+            $dsn = 'sqlite:'.($dbName ?: ':memory:');
         } else {
             throw new \Exception("Unsupported DB_CONNECTION type: {$dbType}");
         }
-        
+
         $pdoOptions = [
             \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
             \PDO::ATTR_TIMEOUT => 10,
             \PDO::ATTR_PERSISTENT => false,  // Never use persistent connections in multi-process environment
             \PDO::ATTR_EMULATE_PREPARES => false,
-            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC
+            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
         ];
-        
+
         // Add MySQL-specific options only for MySQL databases
         if ($dbType === 'mysql' || $dbType === 'mariadb') {
             $pdoOptions[\PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES utf8mb4';
@@ -73,74 +132,40 @@ class MultiThreadScheduler extends \MultiFlexi\Scheduler
             $pdoOptions[\PDO::MYSQL_ATTR_READ_TIMEOUT] = 30;
             $pdoOptions[\PDO::MYSQL_ATTR_WRITE_TIMEOUT] = 30;
         }
-        
+
         try {
             if ($dbType === 'sqlite') {
                 $this->pdo = new \PDO($dsn, null, null, $pdoOptions);
             } else {
                 $this->pdo = new \PDO($dsn, $dbUser, $dbPass, $pdoOptions);
             }
+
             $this->fluent = new \Envms\FluentPDO\Query($this->pdo);
         } catch (\PDOException $e) {
-            error_log('MultiThreadScheduler: Failed to create database connection: ' . $e->getMessage());
+            error_log('MultiThreadScheduler: Failed to create database connection: '.$e->getMessage());
+
             throw $e;
         }
     }
 
-    public function __destruct()
-    {
-        // Korektní uzavření PDO spojení
-        if ($this->pdo instanceof \PDO) {
-            $this->pdo = null;
-        }
-        $this->fluent = null;
-    }
-
     /**
-     * Validate if PDO connection is still alive
+     * Validate if PDO connection is still alive.
      */
     private function isConnectionAlive(): bool
     {
         if (!$this->pdo instanceof \PDO) {
             return false;
         }
-        
+
         try {
             // Try a simple query to test connection
             $this->pdo->query('SELECT 1')->fetchColumn();
+
             return true;
         } catch (\PDOException $e) {
-            error_log('MultiThreadScheduler: Connection validation failed: ' . $e->getMessage());
+            error_log('MultiThreadScheduler: Connection validation failed: '.$e->getMessage());
+
             return false;
         }
-    }
-    
-    /**
-     * Override parent getPdo() to use our connection with validation
-     */
-    public function getPdo($properties = [])
-    {
-        if (!$this->isConnectionAlive()) {
-            error_log('MultiThreadScheduler: Reconnecting to database...');
-            $this->pdo = null;
-            $this->fluent = null;
-            $this->createFreshConnection();
-        }
-        return $this->pdo;
-    }
-    
-    /**
-     * Override parent getFluentPDO() to use our connection
-     */
-    public function getFluentPDO(bool $read = false, bool $write = false)
-    {
-        if (!$this->fluent instanceof \Envms\FluentPDO\Query) {
-            if (!$this->pdo instanceof \PDO) {
-                $this->createFreshConnection();
-            }
-            $this->fluent = new \Envms\FluentPDO\Query($this->pdo);
-            $this->fluent->exceptionOnError = true;
-        }
-        return $this->fluent;
     }
 }
