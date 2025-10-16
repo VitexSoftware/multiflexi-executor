@@ -5,6 +5,14 @@ set -e
 composer-debian multiflexi-executor
 update-multiflexi-env
 
+case "$1" in
+  trigger)
+    if [ "$2" = "restart-multiflexi" ]; then
+      systemctl try-restart multiflexi-executor.service || true
+    fi
+    ;;
+esac
+
 #DEBHELPER#
 
 exit 0
