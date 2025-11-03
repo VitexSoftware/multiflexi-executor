@@ -38,8 +38,38 @@ if (strtolower(\Ease\Shared::cfg('APP_DEBUG', 'false')) === 'true') {
 
 $scheduler = null;
 
+/**
+ * Check if database error is a permanent failure that should not be retried.
+ *
+ * @param string $errorMessage Error message from database exception
+ *
+ * @return bool True if error is permanent and daemon should exit
+ */
+function isPermanentDatabaseError(string $errorMessage): bool
+{
+    // Authentication/credential errors that won't resolve with retries
+    if (strpos($errorMessage, 'Access denied') !== false || 
+        strpos($errorMessage, '1045') !== false ||
+        strpos($errorMessage, 'authentication') !== false) {
+        error_log(_('Database authentication failed. Check credentials in configuration. Exiting.'));
+        return true;
+    }
+    
+    // Database doesn't exist
+    if (strpos($errorMessage, 'Unknown database') !== false ||
+        strpos($errorMessage, '1049') !== false) {
+        error_log(_('Database does not exist. Check database name in configuration. Exiting.'));
+        return true;
+    }
+    
+    return false;
+}
+
 function waitForDatabase(): void
 {
+    $maxRetries = 10; // Maximum retry attempts before giving up
+    $retryCount = 0;
+    
     while (true) {
         try {
             $testScheduler = new Scheduler();
@@ -48,7 +78,21 @@ function waitForDatabase(): void
 
             break;
         } catch (\Throwable $e) {
-            error_log('Database unavailable: '.$e->getMessage());
+            $errorMessage = $e->getMessage();
+            error_log('Database unavailable: '.$errorMessage);
+            
+            // Exit immediately on permanent errors
+            if (isPermanentDatabaseError($errorMessage)) {
+                exit(1);
+            }
+            
+            $retryCount++;
+            if ($retryCount >= $maxRetries) {
+                error_log(_('Maximum database connection retries exceeded. Exiting.'));
+                exit(1);
+            }
+            
+            error_log(sprintf(_('Retrying database connection in 30 seconds (%d/%d)...'), $retryCount, $maxRetries));
             sleep(30);
         }
     }
@@ -75,7 +119,14 @@ do {
             $jobsToLaunch = [];
         }
     } catch (\Throwable $e) {
-        error_log('Database error: '.$e->getMessage());
+        $errorMessage = $e->getMessage();
+        error_log('Database error: '.$errorMessage);
+        
+        // Exit immediately on permanent errors
+        if (isPermanentDatabaseError($errorMessage)) {
+            exit(1);
+        }
+        
         waitForDatabase();
         $scheduler = new Scheduler();
 

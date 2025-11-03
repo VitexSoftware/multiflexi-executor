@@ -125,8 +125,17 @@ class Scheduler extends \MultiFlexi\Engine
                 }
             }
         } catch (\Throwable $e) {
-            // Non-fatal; just log
-            error_log(_('Schema verification failed: ').$e->getMessage());
+            $errorMessage = $e->getMessage();
+            
+            // Check for authentication errors and re-throw to trigger daemon exit
+            if (strpos($errorMessage, 'Access denied') !== false || 
+                strpos($errorMessage, '1045') !== false ||
+                strpos($errorMessage, 'authentication') !== false) {
+                throw $e; // Re-throw authentication errors to trigger daemon exit
+            }
+            
+            // Non-fatal; just log other errors
+            error_log(_('Schema verification failed: ').$errorMessage);
         }
     }
 }
