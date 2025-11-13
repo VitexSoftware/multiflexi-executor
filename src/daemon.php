@@ -20,7 +20,7 @@ date_default_timezone_set('Europe/Prague');
 require_once '../vendor/autoload.php';
 // Optional memory limit override from environment (in megabytes). If set, we will
 // monitor current usage and gracefully exit before the OOM killer intervenes.
-$memorySoftLimitMb = (int) (\Ease\Shared::cfg('MULTIFLEXI_MEMORY_LIMIT_MB', 0));
+$memorySoftLimitMb = (int) \Ease\Shared::cfg('MULTIFLEXI_MEMORY_LIMIT_MB', 0);
 \Ease\Shared::init(['DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD'], '../.env');
 $daemonize = (bool) \Ease\Shared::cfg('MULTIFLEXI_DAEMONIZE', true);
 $loggers = ['syslog', '\\MultiFlexi\\LogToSQL'];
@@ -48,20 +48,22 @@ $scheduler = null;
 function isPermanentDatabaseError(string $errorMessage): bool
 {
     // Authentication/credential errors that won't resolve with retries
-    if (strpos($errorMessage, 'Access denied') !== false || 
-        strpos($errorMessage, '1045') !== false ||
-        strpos($errorMessage, 'authentication') !== false) {
+    if (str_contains($errorMessage, 'Access denied')
+        || str_contains($errorMessage, '1045')
+        || str_contains($errorMessage, 'authentication')) {
         error_log(_('Database authentication failed. Check credentials in configuration. Exiting.'));
+
         return true;
     }
-    
+
     // Database doesn't exist
-    if (strpos($errorMessage, 'Unknown database') !== false ||
-        strpos($errorMessage, '1049') !== false) {
+    if (str_contains($errorMessage, 'Unknown database')
+        || str_contains($errorMessage, '1049')) {
         error_log(_('Database does not exist. Check database name in configuration. Exiting.'));
+
         return true;
     }
-    
+
     return false;
 }
 
@@ -69,7 +71,7 @@ function waitForDatabase(): void
 {
     $maxRetries = 10; // Maximum retry attempts before giving up
     $retryCount = 0;
-    
+
     while (true) {
         try {
             $testScheduler = new Scheduler();
@@ -80,18 +82,20 @@ function waitForDatabase(): void
         } catch (\Throwable $e) {
             $errorMessage = $e->getMessage();
             error_log('Database unavailable: '.$errorMessage);
-            
+
             // Exit immediately on permanent errors
             if (isPermanentDatabaseError($errorMessage)) {
                 exit(1);
             }
-            
-            $retryCount++;
+
+            ++$retryCount;
+
             if ($retryCount >= $maxRetries) {
                 error_log(_('Maximum database connection retries exceeded. Exiting.'));
+
                 exit(1);
             }
-            
+
             error_log(sprintf(_('Retrying database connection in 30 seconds (%d/%d)...'), $retryCount, $maxRetries));
             sleep(30);
         }
@@ -106,12 +110,15 @@ do {
     // Proactive memory safeguard: exit if approaching limit.
     if ($memorySoftLimitMb > 0) {
         $usageBytes = memory_get_usage(true);
-        $usageMb    = (int) ($usageBytes / 1048576);
+        $usageMb = (int) ($usageBytes / 1048576);
+
         if ($usageMb >= $memorySoftLimitMb) {
             error_log('Memory soft limit reached ('.$usageMb.' MB of '.$memorySoftLimitMb.' MB). Shutting down daemon gracefully.');
+
             break; // exits loop to allow banner + normal shutdown.
         }
     }
+
     try {
         $jobsToLaunch = $scheduler->getCurrentJobs();
 
@@ -121,12 +128,12 @@ do {
     } catch (\Throwable $e) {
         $errorMessage = $e->getMessage();
         error_log('Database error: '.$errorMessage);
-        
+
         // Exit immediately on permanent errors
         if (isPermanentDatabaseError($errorMessage)) {
             exit(1);
         }
-        
+
         waitForDatabase();
         $scheduler = new Scheduler();
 

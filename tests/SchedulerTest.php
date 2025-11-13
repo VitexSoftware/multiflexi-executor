@@ -2,11 +2,22 @@
 
 declare(strict_types=1);
 
-use PHPUnit\Framework\TestCase;
+/**
+ * This file is part of the MultiFlexi package
+ *
+ * https://multiflexi.eu/
+ *
+ * (c) Vítězslav Dvořák <http://vitexsoftware.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 use MultiFlexi\Scheduler;
+use PHPUnit\Framework\TestCase;
 
 /**
- * SchedulerTest
+ * SchedulerTest.
  *
  * Validates that the overridden Scheduler operates without fatal error
  * when the underlying `schedule` table has no `type` column. Uses an
@@ -14,7 +25,6 @@ use MultiFlexi\Scheduler;
  */
 class SchedulerTest extends TestCase
 {
-    /** @var PDO */
     private PDO $pdo;
 
     protected function setUp(): void
@@ -24,6 +34,24 @@ class SchedulerTest extends TestCase
         $this->pdo->exec('CREATE TABLE schedule (id INTEGER PRIMARY KEY AUTOINCREMENT, after TEXT NOT NULL, job INTEGER NOT NULL)');
         // Insert one job due now
         $this->pdo->exec("INSERT INTO schedule (after, job) VALUES (datetime('now','-1 minute'), 42)");
+    }
+
+    /**
+     * Test that getCurrentJobs returns a traversable query and does not throw when 'type' column is absent.
+     */
+    public function testGetCurrentJobsWithoutTypeColumn(): void
+    {
+        $scheduler = $this->makeScheduler();
+        $jobsQuery = $scheduler->getCurrentJobs();
+        $this->assertIsIterable($jobsQuery, 'Returned value should be iterable');
+        $rows = [];
+
+        foreach ($jobsQuery as $row) {
+            $rows[] = $row;
+        }
+
+        $this->assertNotEmpty($rows, 'Should fetch at least one scheduled job');
+        $this->assertSame(42, $rows[0]['job']);
     }
 
     /**
@@ -39,21 +67,5 @@ class SchedulerTest extends TestCase
         $prop->setValue($scheduler, $this->pdo);
 
         return $scheduler;
-    }
-
-    /**
-     * Test that getCurrentJobs returns a traversable query and does not throw when 'type' column is absent.
-     */
-    public function testGetCurrentJobsWithoutTypeColumn(): void
-    {
-        $scheduler = $this->makeScheduler();
-        $jobsQuery = $scheduler->getCurrentJobs();
-        $this->assertIsIterable($jobsQuery, 'Returned value should be iterable');
-        $rows = [];
-        foreach ($jobsQuery as $row) {
-            $rows[] = $row;
-        }
-        $this->assertNotEmpty($rows, 'Should fetch at least one scheduled job');
-        $this->assertSame(42, $rows[0]['job']);
     }
 }
