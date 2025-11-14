@@ -7,65 +7,6 @@
     "content-hash": "cedf6e3f26ad4e721f94fe8c53524957",
     "packages": [
         {
-            "name": "fpdo/fluentpdo",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/envms/fluentpdo.git",
-                "reference": "1985e0e8406a56140f387bc9bec786b419cbeccc"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/envms/fluentpdo/zipball/1985e0e8406a56140f387bc9bec786b419cbeccc",
-                "reference": "1985e0e8406a56140f387bc9bec786b419cbeccc",
-                "shasum": ""
-            },
-            "require": {
-                "ext-pdo": "*",
-                "php": ">=7.1"
-            },
-            "require-dev": {
-                "envms/fluent-test": "^1.0",
-                "phpunit/phpunit": "^8.0"
-            },
-            "default-branch": true,
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Envms\\FluentPDO\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "Apache-2.0",
-                "GPL-2.0+"
-            ],
-            "authors": [
-                {
-                    "name": "envms",
-                    "homepage": "https://env.ms"
-                }
-            ],
-            "description": "FluentPDO is a quick and light PHP library for rapid query building. It features a smart join builder, which automatically creates table joins.",
-            "homepage": "https://github.com/envms/fluentpdo",
-            "keywords": [
-                "builder",
-                "database",
-                "db",
-                "dbal",
-                "fluent",
-                "mysql",
-                "oracle",
-                "pdo",
-                "query"
-            ],
-            "support": {
-                "issues": "https://github.com/envms/fluentpdo/issues",
-                "source": "https://github.com/envms/fluentpdo/tree/v2.2.4"
-            },
-            "time": "2022-01-27T21:49:44+00:00"
-        },
-        {
             "name": "jalismrs/bitwarden-php",
             "version": "1.1.0",
             "source": {
@@ -102,16 +43,16 @@
         },
         {
             "name": "justinrainbow/json-schema",
-            "version": "dev-master",
+            "version": "6.6.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jsonrainbow/json-schema.git",
-                "reference": "68ba7677532803cc0c5900dd5a4d730537f2b2f3"
+                "reference": "fd8e5c6b1badb998844ad34ce0abcd71a0aeb396"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jsonrainbow/json-schema/zipball/68ba7677532803cc0c5900dd5a4d730537f2b2f3",
-                "reference": "68ba7677532803cc0c5900dd5a4d730537f2b2f3",
+                "url": "https://api.github.com/repos/jsonrainbow/json-schema/zipball/fd8e5c6b1badb998844ad34ce0abcd71a0aeb396",
+                "reference": "fd8e5c6b1badb998844ad34ce0abcd71a0aeb396",
                 "shasum": ""
             },
             "require": {
@@ -127,7 +68,6 @@
                 "phpstan/phpstan": "^1.12",
                 "phpunit/phpunit": "^8.5"
             },
-            "default-branch": true,
             "bin": [
                 "bin/validate-json"
             ],
@@ -172,9 +112,9 @@
             ],
             "support": {
                 "issues": "https://github.com/jsonrainbow/json-schema/issues",
-                "source": "https://github.com/jsonrainbow/json-schema/tree/master"
+                "source": "https://github.com/jsonrainbow/json-schema/tree/6.6.1"
             },
-            "time": "2025-10-10T11:34:09+00:00"
+            "time": "2025-11-07T18:30:29+00:00"
         },
         {
             "name": "marc-mabe/php-enum",
@@ -666,27 +606,27 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/VitexSoftware/php-ease-fluentpdo.git",
-                "reference": "7387ed1dd73f7f3fceb94b5b4c57566322d27503"
+                "reference": "08e61c950edd94f17053464b36d51559a582e57a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/VitexSoftware/php-ease-fluentpdo/zipball/7387ed1dd73f7f3fceb94b5b4c57566322d27503",
-                "reference": "7387ed1dd73f7f3fceb94b5b4c57566322d27503",
+                "url": "https://api.github.com/repos/VitexSoftware/php-ease-fluentpdo/zipball/08e61c950edd94f17053464b36d51559a582e57a",
+                "reference": "08e61c950edd94f17053464b36d51559a582e57a",
                 "shasum": ""
             },
             "require": {
-                "fpdo/fluentpdo": ">=2.2.4",
-                "php": ">=7.4",
-                "vitexsoftware/ease-core": ">=1.49.0"
+                "php": ">=8.1",
+                "vitexsoftware/ease-core": ">=1.49.0",
+                "vitexsoftware/fluentpdo": "^3.0.3"
             },
             "conflict": {
                 "vitexsoftware/ease-framework": "*"
             },
             "require-dev": {
-                "cakephp/migrations": "3.x-dev",
+                "cakephp/migrations": "4.8.2",
                 "ergebnis/composer-normalize": "^2.48",
-                "ergebnis/php-cs-fixer-config": "^6.55",
-                "friendsofphp/php-cs-fixer": "^3.88",
+                "ergebnis/php-cs-fixer-config": "^6.56",
+                "friendsofphp/php-cs-fixer": "^3.89",
                 "phpstan/phpstan": "*",
                 "phpunit/phpunit": "*"
             },
@@ -719,7 +659,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2025-10-07T17:00:20+00:00"
+            "time": "2025-11-11T14:31:20+00:00"
         },
         {
             "name": "vitexsoftware/ease-html",
@@ -777,17 +717,98 @@
             "time": "2025-09-15T15:06:24+00:00"
         },
         {
+            "name": "vitexsoftware/fluentpdo",
+            "version": "v3.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/VitexSoftware/fluentpdo.git",
+                "reference": "158ba591531c7e7df5826351c8e0c7e309177bb5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/VitexSoftware/fluentpdo/zipball/158ba591531c7e7df5826351c8e0c7e309177bb5",
+                "reference": "158ba591531c7e7df5826351c8e0c7e309177bb5",
+                "shasum": ""
+            },
+            "require": {
+                "ext-pdo": "*",
+                "php": ">=8.1"
+            },
+            "replace": {
+                "envms/fluentpdo": "^2.2"
+            },
+            "require-dev": {
+                "envms/fluent-test": "^1.0",
+                "ergebnis/composer-normalize": "^2.48",
+                "ergebnis/php-cs-fixer-config": "^6.54",
+                "friendsofphp/php-cs-fixer": "^3.87",
+                "phpstan/phpstan": "*",
+                "phpunit/phpunit": "^12.4",
+                "roave/security-advisories": "dev-latest"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Envms\\FluentPDO\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0",
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "envms",
+                    "homepage": "https://env.ms"
+                },
+                {
+                    "name": "vitex",
+                    "homepage": "https://vitexsoftware.com"
+                }
+            ],
+            "description": "FluentPDO - PHP 8.1+ Edition. A modernized fork with strict typing, union types, and enhanced features. Quick and light PHP library for rapid query building with smart join builder.",
+            "homepage": "https://github.com/VitexSoftware/php-vitexsoftware-fluentpdo",
+            "keywords": [
+                "builder",
+                "database",
+                "db",
+                "dbal",
+                "fluent",
+                "modern-php",
+                "mssql",
+                "mysql",
+                "oracle",
+                "pdo",
+                "php8",
+                "php81",
+                "query",
+                "strict-types",
+                "union-types"
+            ],
+            "support": {
+                "source": "https://github.com/VitexSoftware/fluentpdo/tree/v3.0.3"
+            },
+            "funding": [
+                {
+                    "url": "https://www.patreon.com/VitexSoftware",
+                    "type": "patreon"
+                }
+            ],
+            "time": "2025-10-25T13:16:38+00:00"
+        },
+        {
             "name": "vitexsoftware/multiflexi-core",
             "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core.git",
-                "reference": "ca6c90f9370dbf119b9ea937c57a5ff579f7cc89"
+                "reference": "a6684304eaf683e96bf33293335650db76046ddb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/VitexSoftware/php-vitexsoftware-multiflexi-core/zipball/ca6c90f9370dbf119b9ea937c57a5ff579f7cc89",
-                "reference": "ca6c90f9370dbf119b9ea937c57a5ff579f7cc89",
+                "url": "https://api.github.com/repos/VitexSoftware/php-vitexsoftware-multiflexi-core/zipball/a6684304eaf683e96bf33293335650db76046ddb",
+                "reference": "a6684304eaf683e96bf33293335650db76046ddb",
                 "shasum": ""
             },
             "require": {
@@ -798,7 +819,7 @@
             },
             "require-dev": {
                 "ergebnis/composer-normalize": "^2.48",
-                "ergebnis/php-cs-fixer-config": "^6.55",
+                "ergebnis/php-cs-fixer-config": "^6.56",
                 "friendsofphp/php-cs-fixer": "^3.84",
                 "phpstan/phpstan": "*",
                 "phpstan/phpstan-phpunit": "2.0.x-dev",
@@ -831,7 +852,7 @@
                 "issues": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core/issues",
                 "source": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core/tree/main"
             },
-            "time": "2025-10-17T18:42:52+00:00"
+            "time": "2025-11-13T13:38:17+00:00"
         }
     ],
     "packages-dev": [
@@ -983,12 +1004,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/semver.git",
-                "reference": "b52829022cb18210bb84e44e457bd4e890f8d2a7"
+                "reference": "c9b06fa2f64d9aaf2785cd325742a41f27e290aa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/semver/zipball/b52829022cb18210bb84e44e457bd4e890f8d2a7",
-                "reference": "b52829022cb18210bb84e44e457bd4e890f8d2a7",
+                "url": "https://api.github.com/repos/composer/semver/zipball/c9b06fa2f64d9aaf2785cd325742a41f27e290aa",
+                "reference": "c9b06fa2f64d9aaf2785cd325742a41f27e290aa",
                 "shasum": ""
             },
             "require": {
@@ -1031,7 +1052,7 @@
                     "homepage": "http://robbast.nl"
                 }
             ],
-            "description": "Semver library that offers utilities, version constraint parsing and validation.",
+            "description": "Version comparison library that offers utilities, version constraint parsing and validation.",
             "keywords": [
                 "semantic",
                 "semver",
@@ -1053,7 +1074,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-09-03T06:59:12+00:00"
+            "time": "2025-11-12T10:20:59+00:00"
         },
         {
             "name": "composer/xdebug-handler",
@@ -1127,12 +1148,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ergebnis/composer-normalize.git",
-                "reference": "17058d89e302d3e65fb6c0b04edfa02732640767"
+                "reference": "594876adb7d6e0d006ac0dafddf172d58ba85966"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ergebnis/composer-normalize/zipball/17058d89e302d3e65fb6c0b04edfa02732640767",
-                "reference": "17058d89e302d3e65fb6c0b04edfa02732640767",
+                "url": "https://api.github.com/repos/ergebnis/composer-normalize/zipball/594876adb7d6e0d006ac0dafddf172d58ba85966",
+                "reference": "594876adb7d6e0d006ac0dafddf172d58ba85966",
                 "shasum": ""
             },
             "require": {
@@ -1148,7 +1169,7 @@
             "require-dev": {
                 "composer/composer": "^2.8.3",
                 "ergebnis/license": "^2.7.0",
-                "ergebnis/php-cs-fixer-config": "^6.55.0",
+                "ergebnis/php-cs-fixer-config": "^6.56.0",
                 "ergebnis/phpstan-rules": "^2.12.0",
                 "ergebnis/phpunit-slow-test-detector": "^2.20.0",
                 "fakerphp/faker": "^1.24.1",
@@ -1204,7 +1225,7 @@
                 "security": "https://github.com/ergebnis/composer-normalize/blob/main/.github/SECURITY.md",
                 "source": "https://github.com/ergebnis/composer-normalize"
             },
-            "time": "2025-10-13T22:03:03+00:00"
+            "time": "2025-11-10T22:02:56+00:00"
         },
         {
             "name": "ergebnis/json",
@@ -2114,12 +2135,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "0da2d6679a3df45d6d720aa2e0d4568f82a32e46"
+                "reference": "c97b23dce761ab3c913ee8ac5879af7a358f88de"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/0da2d6679a3df45d6d720aa2e0d4568f82a32e46",
-                "reference": "0da2d6679a3df45d6d720aa2e0d4568f82a32e46",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/c97b23dce761ab3c913ee8ac5879af7a358f88de",
+                "reference": "c97b23dce761ab3c913ee8ac5879af7a358f88de",
                 "shasum": ""
             },
             "require": {
@@ -2165,7 +2186,7 @@
                 "issues": "https://github.com/nikic/PHP-Parser/issues",
                 "source": "https://github.com/nikic/PHP-Parser/tree/master"
             },
-            "time": "2025-09-08T07:54:25+00:00"
+            "time": "2025-10-26T16:58:55+00:00"
         },
         {
             "name": "phar-io/manifest",
@@ -2291,8 +2312,8 @@
             "version": "2.1.x-dev",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/6c44887423faf584640fdddc650b817699849e25",
-                "reference": "6c44887423faf584640fdddc650b817699849e25",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/7e742a0fb109cb4766f90ba2aa711b0f17946822",
+                "reference": "7e742a0fb109cb4766f90ba2aa711b0f17946822",
                 "shasum": ""
             },
             "require": {
@@ -2338,7 +2359,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-10-17T15:16:49+00:00"
+            "time": "2025-11-13T14:40:24+00:00"
         },
         {
             "name": "phpstan/phpstan-phpunit",
@@ -2346,17 +2367,17 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan-phpunit.git",
-                "reference": "39950c70b6a4faa36567b83b8c4b32f889c68e03"
+                "reference": "2fe9fbeceaf76dd1ebaa7bbbb25e2fb5e59db2fe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan-phpunit/zipball/39950c70b6a4faa36567b83b8c4b32f889c68e03",
-                "reference": "39950c70b6a4faa36567b83b8c4b32f889c68e03",
+                "url": "https://api.github.com/repos/phpstan/phpstan-phpunit/zipball/2fe9fbeceaf76dd1ebaa7bbbb25e2fb5e59db2fe",
+                "reference": "2fe9fbeceaf76dd1ebaa7bbbb25e2fb5e59db2fe",
                 "shasum": ""
             },
             "require": {
                 "php": "^7.4 || ^8.0",
-                "phpstan/phpstan": "^2.1.18"
+                "phpstan/phpstan": "^2.1.32"
             },
             "conflict": {
                 "phpunit/phpunit": "<7.0"
@@ -2392,7 +2413,7 @@
                 "issues": "https://github.com/phpstan/phpstan-phpunit/issues",
                 "source": "https://github.com/phpstan/phpstan-phpunit/tree/2.0.x"
             },
-            "time": "2025-10-14T10:27:41+00:00"
+            "time": "2025-11-11T07:55:22+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -2400,12 +2421,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
-                "reference": "98384864722106029944f669cc51668a0de2717a"
+                "reference": "37047b5f0e98b31dccb9b7e7241e4f66ebfcd358"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/98384864722106029944f669cc51668a0de2717a",
-                "reference": "98384864722106029944f669cc51668a0de2717a",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/37047b5f0e98b31dccb9b7e7241e4f66ebfcd358",
+                "reference": "37047b5f0e98b31dccb9b7e7241e4f66ebfcd358",
                 "shasum": ""
             },
             "require": {
@@ -2482,7 +2503,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-09-26T13:02:34+00:00"
+            "time": "2025-11-08T16:53:07+00:00"
         },
         {
             "name": "phpunit/php-file-iterator",
@@ -2787,12 +2808,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "33d931d538fb5fc3600273e629299c9638b761bd"
+                "reference": "6a9a4178269dfd0c20939f9350de53d6c2c06039"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/33d931d538fb5fc3600273e629299c9638b761bd",
-                "reference": "33d931d538fb5fc3600273e629299c9638b761bd",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/6a9a4178269dfd0c20939f9350de53d6c2c06039",
+                "reference": "6a9a4178269dfd0c20939f9350de53d6c2c06039",
                 "shasum": ""
             },
             "require": {
@@ -2885,7 +2906,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-10-16T06:58:55+00:00"
+            "time": "2025-11-13T11:27:46+00:00"
         },
         {
             "name": "psr/container",
@@ -3578,17 +3599,17 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/rectorphp/rector.git",
-                "reference": "44c127ea886e878626ac2a894574cdc61275c3aa"
+                "reference": "b9384e6f1504ee1aedcf2552309cbc0321d1bfbc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rectorphp/rector/zipball/44c127ea886e878626ac2a894574cdc61275c3aa",
-                "reference": "44c127ea886e878626ac2a894574cdc61275c3aa",
+                "url": "https://api.github.com/repos/rectorphp/rector/zipball/b9384e6f1504ee1aedcf2552309cbc0321d1bfbc",
+                "reference": "b9384e6f1504ee1aedcf2552309cbc0321d1bfbc",
                 "shasum": ""
             },
             "require": {
                 "php": "^7.4|^8.0",
-                "phpstan/phpstan": "^2.1.26"
+                "phpstan/phpstan": "^2.1.32"
             },
             "conflict": {
                 "rector/rector-doctrine": "*",
@@ -3631,7 +3652,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-10-17T06:23:08+00:00"
+            "time": "2025-11-13T17:12:37+00:00"
         },
         {
             "name": "sebastian/cli-parser",
@@ -4673,12 +4694,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "96f1107efb9f0f5ab24def8b66bbdf6588bbe0e2"
+                "reference": "a2b78aee774e76d4a7ec82624ad9c269305010fa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/96f1107efb9f0f5ab24def8b66bbdf6588bbe0e2",
-                "reference": "96f1107efb9f0f5ab24def8b66bbdf6588bbe0e2",
+                "url": "https://api.github.com/repos/symfony/console/zipball/a2b78aee774e76d4a7ec82624ad9c269305010fa",
+                "reference": "a2b78aee774e76d4a7ec82624ad9c269305010fa",
                 "shasum": ""
             },
             "require": {
@@ -4763,7 +4784,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-11-05T14:29:59+00:00"
+            "time": "2025-11-13T08:53:59+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -5147,12 +5168,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/options-resolver.git",
-                "reference": "3324bca1ff334c8807a3968882edb76ea708b955"
+                "reference": "b38026df55197f9e39a44f3215788edf83187b80"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/options-resolver/zipball/3324bca1ff334c8807a3968882edb76ea708b955",
-                "reference": "3324bca1ff334c8807a3968882edb76ea708b955",
+                "url": "https://api.github.com/repos/symfony/options-resolver/zipball/b38026df55197f9e39a44f3215788edf83187b80",
+                "reference": "b38026df55197f9e39a44f3215788edf83187b80",
                 "shasum": ""
             },
             "require": {
@@ -5210,7 +5231,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-08-13T16:46:49+00:00"
+            "time": "2025-11-12T15:39:26+00:00"
         },
         {
             "name": "symfony/polyfill-ctype",

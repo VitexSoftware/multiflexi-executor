@@ -63,7 +63,7 @@ class Scheduler extends \MultiFlexi\Engine
      */
     public function getCurrentJobs()
     {
-        $this->verifySchema();
+        // $this->verifySchema();
         $databaseType = $this->getPdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
         switch ($databaseType) {
             case 'mysql':
@@ -115,14 +115,6 @@ class Scheduler extends \MultiFlexi\Engine
                         $columns[] = $col['COLUMN_NAME'] ?? '';
                     }
                     break;
-            }
-            if (!in_array('type', $columns, true)) {
-                // Provide one-time warning (env guard to silence if needed)
-                static $warned = false;
-                if ($warned === false && getenv('MULTIFLEXI_SUPPRESS_TYPE_WARNING') !== '1') {
-                    error_log(_('Schedule table has no "type" column; code will avoid its usage.'));
-                    $warned = true;
-                }
             }
         } catch (\Throwable $e) {
             $errorMessage = $e->getMessage();
