@@ -158,7 +158,7 @@ do {
     }
 
     if ($daemonize) {
-        sleep(\Ease\Shared::cfg('MULTIFLEXI_CYCLE_PAUSE', 10));
+        sleep((int) \Ease\Shared::cfg('MULTIFLEXI_CYCLE_PAUSE', 10));
     }
 } while ($daemonize);
 

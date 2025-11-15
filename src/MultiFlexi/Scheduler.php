@@ -25,7 +25,7 @@ class Scheduler extends \MultiFlexi\Engine
     public static array $intervCron = [
         'y' => '0 0 1 1 *',    // yearly
         'm' => '0 0 1 * *',    // monthly
-        'w' => '0 0 * * 0',    // weekly (Sunday)
+        'w' => '0 0 * * MON',  // weekly (Monday)
         'd' => '0 0 * * *',    // daily
         'h' => '0 * * * *',    // hourly
         'i' => '* * * * *',    // minutely
@@ -50,7 +50,7 @@ class Scheduler extends \MultiFlexi\Engine
     public function addJob(Job $job, \DateTime $when): int
     {
         $job->getRuntemplate()->updateToSQL([
-            'last_schedule' => $when->format('Y-m-d H:i:s'),
+            'next_schedule' => $when->format('Y-m-d H:i:s'),
         ], ['id' => $job->getRuntemplate()->getMyKey()]);
 
         return $this->insertToSQL([
