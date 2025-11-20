@@ -4,6 +4,14 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 Repository: multiflexi-executor (part of the MultiFlexi suite)
 
+## Project Overview
+
+**Type**: PHP Project/Debian Package - Systemd Service
+**Purpose**: MultiFlexi job execution daemon (v2.x+)
+**Status**: Active
+
+The executor runs as a continuous systemd service (``multiflexi-executor.service``) that polls the database for scheduled jobs and executes them.
+
 Development commands
 - Install dependencies
   - composer install
@@ -44,6 +52,8 @@ Configuration and environment
 - Logging is configured via EASE_LOGGER, automatically assembled based on env and available classes: syslog | \MultiFlexi\LogToSQL | optional \MultiFlexi\LogToZabbix | console (when APP_DEBUG=true).
 
 High-level architecture and flow
+- **Production Mode (v2.x+)**: Runs as systemd service ``multiflexi-executor.service`` under the ``multiflexi`` user, continuously polling the ``schedule`` table and executing due jobs
+- **Development Mode**: Can run one-shot executions for a given RunTemplate or as a manual daemon for testing
 - Purpose: multiflexi-executor runs MultiFlexi jobs either as a one-shot execution for a given RunTemplate or as a daemon that continuously dispatches scheduled jobs.
 - Core dependency: vitexsoftware/multiflexi-core provides domain classes used here (e.g., Scheduler, Job, RunTemplate, UnixUser/Anonym, LogToSQL, optional LogToZabbix). This repo focuses on orchestration and process lifecycle; business logic and persistence live in the core.
 - Entrypoints (src/):
