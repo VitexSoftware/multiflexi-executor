@@ -41,6 +41,7 @@ if (strtolower(Shared::cfg('APP_DEBUG', 'false')) === 'true') {
 \define('EASE_LOGGER', implode('|', $loggers));
 $interval = $argc === 2 ? $argv[1] : null;
 \define('APP_NAME', 'MultiFlexi executor '.RunTemplate::codeToInterval($interval));
+new \MultiFlexi\Defaults();
 Shared::user(new \MultiFlexi\UnixUser());
 
 $runTemplater = new \MultiFlexi\RunTemplate($runtempateId);

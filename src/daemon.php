@@ -15,26 +15,30 @@ declare(strict_types=1);
 
 namespace MultiFlexi;
 
+use Ease\Shared;
+
 date_default_timezone_set('Europe/Prague');
 
 require_once '../vendor/autoload.php';
 // Optional memory limit override from environment (in megabytes). If set, we will
 // monitor current usage and gracefully exit before the OOM killer intervenes.
-$memorySoftLimitMb = (int) \Ease\Shared::cfg('MULTIFLEXI_MEMORY_LIMIT_MB', 0);
-\Ease\Shared::init(['DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD'], '../.env');
-$daemonize = (bool) \Ease\Shared::cfg('MULTIFLEXI_DAEMONIZE', true);
+$memorySoftLimitMb = (int) Shared::cfg('MULTIFLEXI_MEMORY_LIMIT_MB', 0);
+Shared::init(['DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD'], '../.env');
+$daemonize = (bool) Shared::cfg('MULTIFLEXI_DAEMONIZE', true);
 $loggers = ['syslog', '\\MultiFlexi\\LogToSQL'];
 
-if (\Ease\Shared::cfg('ZABBIX_SERVER') && \Ease\Shared::cfg('ZABBIX_HOST') && class_exists('\\MultiFlexi\\LogToZabbix')) {
+if (Shared::cfg('ZABBIX_SERVER') && Shared::cfg('ZABBIX_HOST') && class_exists('\\MultiFlexi\\LogToZabbix')) {
     $loggers[] = '\\MultiFlexi\\LogToZabbix';
 }
 
-if (strtolower(\Ease\Shared::cfg('APP_DEBUG', 'false')) === 'true') {
+if (strtolower(Shared::cfg('APP_DEBUG', 'false')) === 'true') {
     $loggers[] = 'console';
 }
 
 \define('EASE_LOGGER', implode('|', $loggers));
-\Ease\Shared::user(new \Ease\Anonym());
+
+new \MultiFlexi\Defaults();
+Shared::user(new \MultiFlexi\UnixUser());
 
 $scheduler = null;
 
@@ -158,7 +162,7 @@ do {
     }
 
     if ($daemonize) {
-        sleep((int) \Ease\Shared::cfg('MULTIFLEXI_CYCLE_PAUSE', 10));
+        sleep((int) Shared::cfg('MULTIFLEXI_CYCLE_PAUSE', 10));
     }
 } while ($daemonize);
 
