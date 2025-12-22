@@ -17,6 +17,9 @@ Type=simple
 MemoryMax=2G
 # Propagate soft limit (in MB) to daemon for graceful early exit (matches daemon code usage)
 Environment=MULTIFLEXI_MEMORY_LIMIT_MB=1800
+# Automatically restart on exit (including after hitting memory limit)
+Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
