@@ -34,13 +34,20 @@ Development commands
 
 Running the executor locally
 Note: src/executor.php and src/daemon.php expect vendor/autoload.php and a .env file one directory above their own location. Run them from the src/ directory so relative paths resolve correctly.
-- Single runtemplate execution (run one job):
-  - From repo root:
+- Single job execution (two modes):
+  - Mode 1: Create and execute new job from RunTemplate:
     - cd src && php -q -f executor.php -- -r <RUNTEMPLATE_ID> [-o <output_path>] [-e <env_file>]
+  - Mode 2: Execute existing job by Job ID:
+    - cd src && php -q -f executor.php -- -j <JOB_ID> [-o <output_path>] [-e <env_file>]
   - Flags/behavior:
-    - -r or --runtemplate sets the RunTemplate ID to execute
+    - -r or --runtemplate sets the RunTemplate ID to create and execute a new job from
+    - -j or --job sets the Job ID to execute (job must already exist in database)
     - -o or --output sets destination for captured output (defaults to stdout or RESULT_FILE from .env)
     - -e or --environment sets path to .env (defaults to ../.env)
+  - Notes:
+    - Mode 1 creates a new job record, schedules it, and executes it immediately
+    - Mode 2 executes an already-created job (useful for retrying failed jobs or manual execution)
+    - You must specify either -r or -j, but not both
 - Long-running executor daemon (polls DB and executes due jobs):
   - From repo root:
     - cd src && php -q -f daemon.php
@@ -58,8 +65,10 @@ High-level architecture and flow
 - Core dependency: vitexsoftware/multiflexi-core provides domain classes used here (e.g., Scheduler, Job, RunTemplate, UnixUser/Anonym, LogToSQL, optional LogToZabbix). This repo focuses on orchestration and process lifecycle; business logic and persistence live in the core.
 - Entrypoints (src/):
   - executor.php (one-shot):
-    - Initializes config from .env; builds logger set; sets APP_NAME based on an optional interval code.
-    - Resolves a RunTemplate by ID, prepares a Job (prepareJob), executes it (performJob), prints/stdout and stderr streams, and exits with the underlying process exit code.
+    - Initializes config from .env; builds logger set; sets APP_NAME.
+    - Two execution modes:
+      - Mode 1 (RunTemplate): Resolves a RunTemplate by ID, prepares a new Job (prepareJob), executes it (performJob), prints stdout and stderr streams, and exits with the underlying process exit code.
+      - Mode 2 (Job): Loads an existing Job by ID, executes it (performJob), prints stdout and stderr streams, and exits with the underlying process exit code.
   - daemon.php (long-running):
     - Initializes config; waits for DB availability (retry loop) before starting.
     - Main loop:
