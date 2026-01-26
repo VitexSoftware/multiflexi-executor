@@ -48,6 +48,10 @@ Shared::user(new \MultiFlexi\UnixUser());
 if ($jobId > 0) {
     $jobber = new Job($jobId);
 
+    if (Shared::cfg('APP_DEBUG')) {
+        $jobber->logBanner( ' Job #'.$jobId );
+    }
+
     if (!$jobber->getMyKey()) {
         fwrite(fopen('php://stderr', 'wb'), sprintf('Job #%d not found'.\PHP_EOL, $jobId));
         exit(1);
@@ -73,16 +77,16 @@ if ($runtempateId > 0) {
     $runTemplater = new \MultiFlexi\RunTemplate($runtempateId);
 
     if (Shared::cfg('APP_DEBUG')) {
-        $runTemplater->logBanner();
+        $runTemplater->logBanner( 'RunTemplate #'.$runtempateId, $runTemplater->getRecordName());
     }
-
+    
     if (!$runTemplater->getMyKey()) {
         fwrite(fopen('php://stderr', 'wb'), sprintf('RunTemplate #%d not found'.\PHP_EOL, $runtempateId));
         exit(1);
     }
 
     $jobber = new Job();
-    $jobber->prepareJob($runTemplater->getMyKey(), new ConfigFields('empty'), new \DateTime(), 'Native', 'CommandLine');
+    $jobber->prepareJob($runTemplater, new ConfigFields('empty'), new \DateTime(), 'Native', 'CommandLine');
     $jobber->performJob();
 
     echo $jobber->executor->getOutput();
