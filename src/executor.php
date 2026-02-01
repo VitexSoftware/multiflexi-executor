@@ -49,11 +49,12 @@ if ($jobId > 0) {
     $jobber = new Job($jobId);
 
     if (Shared::cfg('APP_DEBUG')) {
-        $jobber->logBanner( ' Job #'.$jobId );
+        $jobber->logBanner(' Job #'.$jobId);
     }
 
     if (!$jobber->getMyKey()) {
         fwrite(fopen('php://stderr', 'wb'), sprintf('Job #%d not found'.\PHP_EOL, $jobId));
+
         exit(1);
     }
 
@@ -77,11 +78,12 @@ if ($runtempateId > 0) {
     $runTemplater = new \MultiFlexi\RunTemplate($runtempateId);
 
     if (Shared::cfg('APP_DEBUG')) {
-        $runTemplater->logBanner( 'RunTemplate #'.$runtempateId, $runTemplater->getRecordName());
+        $runTemplater->logBanner('RunTemplate #'.$runtempateId, $runTemplater->getRecordName());
     }
-    
+
     if (!$runTemplater->getMyKey()) {
         fwrite(fopen('php://stderr', 'wb'), sprintf('RunTemplate #%d not found'.\PHP_EOL, $runtempateId));
+
         exit(1);
     }
 
@@ -99,4 +101,5 @@ if ($runtempateId > 0) {
 }
 
 fwrite(fopen('php://stderr', 'wb'), 'Specify either runtemplate ID (-r) or job ID (-j) to run'.\PHP_EOL);
+
 exit(1);

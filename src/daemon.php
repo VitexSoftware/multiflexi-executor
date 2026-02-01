@@ -35,12 +35,11 @@ if (strtolower(Shared::cfg('APP_DEBUG', 'false')) === 'true') {
     $loggers[] = 'console';
 }
 
+\define('APP_NAME', 'MultiFlexi Executor');
 \define('EASE_LOGGER', implode('|', $loggers));
 
 new \MultiFlexi\Defaults();
 Shared::user(new \MultiFlexi\UnixUser());
-
-$scheduler = null;
 
 /**
  * Check if database error is a permanent failure that should not be retried.
