@@ -1,8 +1,9 @@
-multiflexi-executor (0.1.2) UNRELEASED; urgency=medium
+multiflexi-executor (1.14.1) UNRELEASED; urgency=medium
 
   * update for vitexsoftware/fluentpdo
+  * Set SQLite as default database backend with version requirements
 
- -- vitex <info@vitexsoftware.cz>  Thu, 23 Oct 2025 11:55:17 +0200
+ -- vitex <info@vitexsoftware.cz>  Sun, 01 Feb 2026 19:29:34 +0100
 
 multiflexi-executor (0.1.1) unstable; urgency=medium
 
