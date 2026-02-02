@@ -17,7 +17,7 @@ Architecture: all
 Multi-Arch: foreign
 Depends:
  ${misc:Depends},
- multiflexi-sqlite (>= 2.4.1) | multiflexi-database (>= 2.4.1), php-vitexsoftware-multiflexi-core
+ multiflexi-sqlite (>= 2.4.1) | multiflexi-mysql (>= 2.4.1) | multiflexi-pgsql (>= 2.4.1), php-vitexsoftware-multiflexi-core
 Suggests: multiflexi-cli, multiflexi-executor-docker
 Description: execute MultiFlexi jobs
  Execute once scheduled job in MultiFlexi and store its
