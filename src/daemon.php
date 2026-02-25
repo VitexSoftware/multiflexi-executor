@@ -156,7 +156,7 @@ do {
             $scheduler->deleteFromSQL($scheduledJob['id']);
             $job->cleanUp();
         } catch (\Throwable $e) {
-            error_log('Job error: '.$e->getMessage());
+            error_log('Job '.$job->getMyKey().' error: '.$e->getMessage());
         }
     }
 
