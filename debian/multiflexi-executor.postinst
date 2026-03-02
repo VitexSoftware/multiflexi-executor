@@ -2,7 +2,6 @@
 # If no user provided script is activated in this file, you should remove this file.
 set -e
 
-composer-debian multiflexi-executor
 update-multiflexi-env
 
 case "$1" in
