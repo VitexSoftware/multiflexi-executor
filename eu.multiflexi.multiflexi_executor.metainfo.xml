@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="service">
+  <id>eu.multiflexi.multiflexi_executor</id>
+
+  <name>MultiFlexi Executor</name>
+  <summary>Execute MultiFlexi scheduled jobs</summary>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <developer id="cz.vitexsoftware">
+    <name>Vitex Software</name>
+  </developer>
+
+  <description>
+    <p>
+      MultiFlexi Executor is a systemd service daemon that polls the MultiFlexi
+      database for scheduled jobs and executes them. It supports both one-shot
+      execution for a given RunTemplate and continuous daemon mode for
+      dispatching scheduled jobs automatically.
+    </p>
+    <p>
+      The executor captures job output, handles logging to syslog, database,
+      and optionally Zabbix, and supports running tasks in Docker containers
+      via the optional multiflexi-executor-docker package.
+    </p>
+  </description>
+
+  <launchable type="service">multiflexi-executor.service</launchable>
+
+  <url type="homepage">https://multiflexi.eu</url>
+  <url type="bugtracker">https://github.com/VitexSoftware/multiflexi-executor/issues</url>
+  <url type="vcs-browser">https://github.com/VitexSoftware/multiflexi-executor</url>
+
+  <content_rating type="oars-1.1" />
+
+  <provides>
+    <binary>multiflexi-executor</binary>
+  </provides>
+
+  <categories>
+    <category>System</category>
+  </categories>
+</component>
