@@ -26,7 +26,7 @@ Description: execute MultiFlexi jobs
 
 Package: multiflexi-executor-docker
 Multi-Arch: foreign
-Depends: ${misc:Depends},multiflexi, docker-ce-cli|docker.io
+Depends: ${misc:Depends}, php-vitexsoftware-multiflexi-core, docker-ce-cli|docker.io
 Replaces: multiflexi-docker
 Architecture: all
 Description: Run MultiFlexi tasks in container
