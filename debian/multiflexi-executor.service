@@ -10,7 +10,7 @@ After=multi-user.target
 User=multiflexi
 Group=multiflexi
 EnvironmentFile=/etc/multiflexi/multiflexi.env
-ExecStart=/usr/bin/php /usr/lib/multiflexi-executor/daemon.php
+ExecStart=/usr/bin/php /usr/share/multiflexi-executor/daemon.php
 LimitNOFILE=8192:16384
 Type=simple
 # Hard memory ceiling to prevent uncontrolled growth; adjust as needed.
