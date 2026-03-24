@@ -1,4 +1,4 @@
-# WARP.md
+# AGENTS.md
 
 This file provides guidance to WARP (warp.dev) when working with code in this repository.
 
@@ -13,6 +13,7 @@ Repository: multiflexi-executor (part of the MultiFlexi suite)
 The executor runs as a continuous systemd service (``multiflexi-executor.service``) that polls the database for scheduled jobs and executes them.
 
 Development commands
+
 - Install dependencies
   - composer install
   - Or via Makefile target: make vendor
@@ -34,6 +35,7 @@ Development commands
 
 Running the executor locally
 Note: src/executor.php and src/daemon.php expect vendor/autoload.php and a .env file one directory above their own location. Run them from the src/ directory so relative paths resolve correctly.
+
 - Single job execution (two modes):
   - Mode 1: Create and execute new job from RunTemplate:
     - cd src && php -q -f executor.php -- -r <RUNTEMPLATE_ID> [-o <output_path>] [-e <env_file>]
@@ -54,11 +56,13 @@ Note: src/executor.php and src/daemon.php expect vendor/autoload.php and a .env 
   - Behavior is controlled via .env. MULTIFLEXI_DAEMONIZE=true runs continuously; MULTIFLEXI_CYCLE_PAUSE controls poll interval (seconds).
 
 Configuration and environment
+
 - Place a .env file at the repository root. The executor reads DB and app settings via Ease\Shared from that file.
 - Expected keys include (driven by MultiFlexi core): DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, APP_DEBUG, MULTIFLEXI_DAEMONIZE, MULTIFLEXI_CYCLE_PAUSE, RESULT_FILE, ZABBIX_SERVER, ZABBIX_HOST.
 - Logging is configured via EASE_LOGGER, automatically assembled based on env and available classes: syslog | \MultiFlexi\LogToSQL | optional \MultiFlexi\LogToZabbix | console (when APP_DEBUG=true).
 
 High-level architecture and flow
+
 - **Production Mode (v2.x+)**: Runs as systemd service ``multiflexi-executor.service`` under the ``multiflexi`` user, continuously polling the ``schedule`` table and executing due jobs
 - **Development Mode**: Can run one-shot executions for a given RunTemplate or as a manual daemon for testing
 - Purpose: multiflexi-executor runs MultiFlexi jobs either as a one-shot execution for a given RunTemplate or as a daemon that continuously dispatches scheduled jobs.
@@ -79,9 +83,10 @@ High-level architecture and flow
 - Tests (tests/): contains an integration-oriented test script (tests/test.sh) that exercises RunTemplate scheduling via multiflexi-cli. PHPUnit is available for unit tests via vendor/bin/phpunit.
 
 Cross-repo context (MultiFlexi suite)
+
 - This executor expects the shared MultiFlexi database schema and core library. It operates alongside other components (e.g., scheduler/UI) but only interacts through the DB and core APIs. See the top-level MultiFlexi project README for platform-level docs.
 
 Notes for future modifications
+
 - If you change class locations or add namespaces, ensure composer.json autoload sections are updated and run composer dump-autoload or make autoload.
 - PHPStan config lives in phpstan-default.neon.dist; use the baseline target to manage legacy issues when raising strictness.
-
