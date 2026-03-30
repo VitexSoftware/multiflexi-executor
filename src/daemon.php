@@ -145,7 +145,7 @@ do {
 
     foreach ($jobsToLaunch as $scheduledJob) {
         try {
-            $job = new Job($scheduledJob['job']);
+            $job = new Job($scheduledJob['job'], ['autoload' => true]);
 
             if (empty($job->getData()) === false) {
                 $job->performJob();
