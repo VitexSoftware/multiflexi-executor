@@ -1,0 +1,2 @@
+debian/multiflexi-executor-k8s.readme  usr/share/doc/multiflexi-executor-k8s/
+src/MultiFlexi/Executor/Kubernetes.php usr/share/php/MultiFlexi/

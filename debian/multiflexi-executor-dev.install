@@ -1,0 +1,3 @@
+src/MultiFlexi/Executor/Fake.php      usr/share/php/MultiFlexi/Executor/
+tests/*                               usr/share/multiflexi-executor/tests/
+debian/multiflexi-executor-dev.readme usr/share/doc/multiflexi-executor-dev/

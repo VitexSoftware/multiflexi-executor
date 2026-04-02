@@ -8,6 +8,7 @@
         "api"
     ],
     "require": {
+        "php": ">=8.1",
         "vitexsoftware/multiflexi-core": "dev-main"
     },
     "license": "MIT",

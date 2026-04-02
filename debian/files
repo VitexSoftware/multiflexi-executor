@@ -1,3 +1,7 @@
+multiflexi-executor-azure_1.14.2_all.deb web optional
+multiflexi-executor-dev_1.14.2_all.deb web optional
 multiflexi-executor-docker_1.14.2_all.deb web optional
+multiflexi-executor-k8s_1.14.2_all.deb web optional
+multiflexi-executor-podman_1.14.2_all.deb web optional
 multiflexi-executor_1.14.2_all.deb web optional
 multiflexi-executor_1.14.2_amd64.buildinfo web optional

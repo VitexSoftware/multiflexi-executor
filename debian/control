@@ -43,3 +43,27 @@ Description: Run MultiFlexi tasks in container
 #Description: Run MultiFlexi tasks on Kubrnetes
 # Run MultiFlexi tasks in big corporation
 
+Package: multiflexi-executor-k8s
+Depends: ${misc:Depends}, multiflexi-executor, kubectl | kubernetes-client
+Architecture: all
+Description: Run MultiFlexi tasks on Kubernetes
+ Run MultiFlexi tasks on Kubernetes clusters using kubectl
+
+Package: multiflexi-executor-podman
+Depends: ${misc:Depends}, php-vitexsoftware-multiflexi-core, podman
+Architecture: all
+Description: Run MultiFlexi tasks in Podman
+ Run MultiFlexi tasks in Podman containers
+
+Package: multiflexi-executor-azure
+Depends: ${misc:Depends}, php-vitexsoftware-multiflexi-core, azure-cli
+Architecture: all
+Description: Run MultiFlexi tasks in Azure Containers
+ Run MultiFlexi tasks in Azure using `az` CLI
+
+Package: multiflexi-executor-dev
+Depends: ${misc:Depends}, multiflexi-executor
+Architecture: all
+Description: Development helpers for MultiFlexi executor
+ Includes test helpers and fake executor for development and CI
+

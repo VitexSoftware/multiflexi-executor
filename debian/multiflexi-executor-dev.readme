@@ -1,0 +1,4 @@
+MultiFlexi Executor development helpers
+
+This package installs the `Fake` executor and the test files useful for
+development and CI.

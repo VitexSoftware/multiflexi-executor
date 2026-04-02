@@ -1,0 +1,2 @@
+debian/multiflexi-executor-azure.readme usr/share/doc/multiflexi-executor-azure/
+src/MultiFlexi/Executor/Azure.php                usr/share/php/MultiFlexi/

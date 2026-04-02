@@ -1,0 +1,4 @@
+MultiFlexi Executor Azure helper
+
+This package provides the Azure executor helper for MultiFlexi and requires the
+`az` CLI to be installed (azure-cli).

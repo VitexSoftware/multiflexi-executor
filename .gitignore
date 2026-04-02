@@ -11,3 +11,16 @@ debian/multiflexi-executor.debhelper.log
 /nbproject/private/
 /.env
 .build/
+debian/multiflexi-executor-dev/
+debian/multiflexi-executor-azure.substvars
+debian/multiflexi-executor-dev.substvars
+debian/multiflexi-executor-k8s.substvars
+debian/multiflexi-executor-podman.substvars
+debian/multiflexi-executor-azure/
+debian/multiflexi-executor-podman/
+debian/multiflexi-executor-k8s/
+debian/multiflexi-executor-dev.debhelper.log
+debian/multiflexi-executor-podman.debhelper.log
+debian/multiflexi-executor-k8s.debhelper.log
+debian/multiflexi-executor-azure.debhelper.log
+debian/debhelper-build-stamp

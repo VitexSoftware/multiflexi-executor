@@ -1,2 +1,6 @@
 multiflexi-executor
 multiflexi-executor-docker
+multiflexi-executor-k8s
+multiflexi-executor-podman
+multiflexi-executor-azure
+multiflexi-executor-dev

@@ -1,0 +1,4 @@
+MultiFlexi Executor Podman helper
+
+This package provides the Podman executor helper for MultiFlexi and requires the
+`podman` client to be installed.

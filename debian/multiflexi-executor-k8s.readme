@@ -1,0 +1,8 @@
+MultiFlexi Executor Kubernetes helper package
+
+This package contains Kubernetes integration helper files for the
+MultiFlexi executor. It depends on `multiflexi-executor` and requires
+`kubectl` (or a compatible Kubernetes client) to be installed on the host.
+
+It installs only packaging metadata and does not duplicate the main
+executor files.
