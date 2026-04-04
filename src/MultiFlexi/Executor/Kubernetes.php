@@ -25,6 +25,9 @@ class Kubernetes extends Native implements \MultiFlexi\executor
     private ?Process $process = null;
     private ?string $podName = null;
     private ?string $kubeconfig = null;
+    private string $jobStdout = '';
+    private string $jobStderr = '';
+    private ?int $jobExitCode = null;
 
     /**
      * Store pod logs after job completion via `kubectl logs`.
@@ -174,6 +177,11 @@ class Kubernetes extends Native implements \MultiFlexi\executor
      */
     public function launchJob(): void
     {
+        // Initialize job output defaults for early-return safety
+        $this->jobExitCode = 1;
+        $this->jobStdout = '';
+        $this->jobStderr = '';
+
         if (\MultiFlexi\Application::doesBinaryExist('kubectl') === false) {
             $this->addStatusMessage('kubectl binary is not available in PATH', 'error');
 
@@ -196,6 +204,8 @@ class Kubernetes extends Native implements \MultiFlexi\executor
         $home = getenv('HOME') ?: '/root';
         $kubeconfig = getenv('KUBECONFIG') ?: $home.'/.kube/config';
         $this->kubeconfig = $kubeconfig;
+
+        $namespace = self::helmNamespace($helmConfig);
 
         // ensure application is deployed in cluster; if not and helm configured, deploy it
         if ($this->isDeployed($kubernetes, $namespace, $helmConfig) === false) {
@@ -241,6 +251,11 @@ class Kubernetes extends Native implements \MultiFlexi\executor
 
         $exit = $this->launch(trim($command));
 
+        // Save job output before subsequent launch() calls overwrite $this->process
+        $this->jobStdout = $this->process?->getOutput() ?? '';
+        $this->jobStderr = $this->process?->getErrorOutput() ?? '';
+        $this->jobExitCode = $exit;
+
         if ($artifactEnabled) {
             $this->collectArtifacts($artifactConfig, $namespace, $podName);
             $this->cleanupPod($namespace, $podName, (bool) ($artifactConfig['keepPodOnFailure'] ?? false), (int) ($exit ?? 1));
@@ -251,17 +266,28 @@ class Kubernetes extends Native implements \MultiFlexi\executor
 
     public function getErrorOutput(): string
     {
-        return $this->process?->getErrorOutput() ?? '';
+        return $this->jobStderr !== '' ? $this->jobStderr : ($this->process?->getErrorOutput() ?? '');
     }
 
     public function getExitCode(): int
     {
-        return $this->process?->getExitCode() ?? 0;
+        return $this->jobExitCode !== null ? $this->jobExitCode : ($this->process?->getExitCode() ?? 0);
     }
 
     public function getOutput(): string
     {
-        return $this->process?->getOutput() ?? '';
+        return $this->jobStdout !== '' ? $this->jobStdout : ($this->process?->getOutput() ?? '');
+    }
+
+    public function meaning(): string
+    {
+        if ($this->process !== null) {
+            $code = $this->process->getExitCode();
+
+            return \Symfony\Component\Process\Process::$exitCodes[$code] ?? _('Unknown');
+        }
+
+        return $this->jobExitCode === 0 ? _('OK') : _('Error');
     }
 
     /**
@@ -281,7 +307,7 @@ class Kubernetes extends Native implements \MultiFlexi\executor
                 return false;
             }
 
-            $helmCmd = sprintf('helm --kubeconfig=%s status %s', escapeshellarg($this->kubeconfig ?? ''), escapeshellarg($releaseName));
+            $helmCmd = sprintf('helm --kubeconfig=%s %s status %s', escapeshellarg($this->kubeconfig ?? ''), $namespace ? '--namespace='.escapeshellarg($namespace) : '', escapeshellarg($releaseName));
 
             return ($this->launch(trim($helmCmd)) ?? 1) === 0;
         }
