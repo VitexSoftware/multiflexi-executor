@@ -104,3 +104,17 @@ Kubernetes executor (src/MultiFlexi/Executor/Kubernetes.php)
 - **logo()**: Returns Kubernetes wheel SVG (base64-encoded)
 - Requires: kubectl, helm, valid kubeconfig, app with ociimage set
 - Tests: tests/KubernetesConfigTest.php validates config derivation logic
+
+Azure Container Instances executor (src/MultiFlexi/Executor/Azure.php)
+
+- Extends Native, implements executor interface
+- Executes jobs as one-shot Azure Container Instances via `az container create --restart-policy Never`
+- **Environment routing**: Sensitive vars (PASSWORD, SECRET, TOKEN, KEY) go to `--secure-environment-variables`; others to `--environment-variables`
+- **Status polling**: `waitForCompletion()` polls `az container show` every 10s for terminal state (max 1 hour)
+- **commandline()**: Overridden to return the actual az command string
+- **setJob()**: Overridden to skip file-path env vars (host paths meaningless inside container)
+- **storeLogs()**: Fetches container logs via `az container logs`
+- **cleanupContainer()**: Deletes container group via `az container delete --yes`
+- Config via env vars: AZURE_RESOURCE_GROUP (required), AZURE_LOCATION, AZURE_CPU, AZURE_MEMORY
+- Requires: Azure CLI (`az`), authenticated session, app with ociimage set
+- Tests: tests/AzureTest.php validates config defaults and usableForApp logic

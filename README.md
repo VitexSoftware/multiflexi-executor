@@ -119,3 +119,25 @@ The Kubernetes executor (`MultiFlexi\Executor\Kubernetes`) runs jobs as one-shot
 
 ### File-path environment variables
 File-path config fields from the executor host are skipped for Kubernetes jobs — host paths are not available inside the pod. A warning is logged for each skipped field.
+
+## Azure Container Instances Executor
+
+The Azure executor (`MultiFlexi\Executor\Azure`) runs jobs as one-shot containers in Azure Container Instances (ACI).
+
+### How it works
+1. **Container creation**: Creates a container group via `az container create --restart-policy Never` (one-shot).
+2. **Environment variables**: Passes env vars via `--environment-variables`. Sensitive vars (containing PASSWORD, SECRET, TOKEN, KEY) are routed to `--secure-environment-variables`.
+3. **Status polling**: Polls `az container show` every 10 seconds until the container reaches a terminal state (up to 1 hour).
+4. **Log collection**: Fetches output via `az container logs` after completion.
+5. **Cleanup**: Deletes the container group via `az container delete`.
+
+### Requirements
+- Azure CLI (`az`) in PATH, authenticated (`az login`)
+- `AZURE_RESOURCE_GROUP` environment variable set (required)
+- Applications must have `ociimage` set
+
+### Configuration (environment variables)
+- `AZURE_RESOURCE_GROUP` — Azure resource group (required)
+- `AZURE_LOCATION` — Azure region (default: `westeurope`)
+- `AZURE_CPU` — CPU cores per container (default: `1`)
+- `AZURE_MEMORY` — Memory in GB per container (default: `1.5`)
