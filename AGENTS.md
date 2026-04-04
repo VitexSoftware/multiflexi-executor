@@ -90,3 +90,17 @@ Notes for future modifications
 
 - If you change class locations or add namespaces, ensure composer.json autoload sections are updated and run composer dump-autoload or make autoload.
 - PHPStan config lives in phpstan-default.neon.dist; use the baseline target to manage legacy issues when raising strictness.
+
+Kubernetes executor (src/MultiFlexi/Executor/Kubernetes.php)
+
+- Extends Native, implements executor interface
+- Executes jobs as one-shot Kubernetes pods via `kubectl run --restart=Never --attach`
+- **Config derivation**: `kubernetesConfig()` reconstructs k8s config from existing DB fields (helmchart, name, artifacts) — no dedicated kubernetes JSON column needed
+- **Helm pre-deploy**: Runs `helm upgrade --install` on first execution if app not yet deployed in cluster
+- **commandline()**: Overridden to return the actual kubectl command string (not the raw app executable)
+- **setJob()**: Overridden to skip file-path env vars (host paths meaningless inside pod)
+- **storeLogs()**: Fetches pod logs via `kubectl logs --tail=1000` after job completion
+- **collectArtifacts()**: Copies files from pod via `kubectl cp`, stores in MultiFlexi FileStore
+- **logo()**: Returns Kubernetes wheel SVG (base64-encoded)
+- Requires: kubectl, helm, valid kubeconfig, app with ociimage set
+- Tests: tests/KubernetesConfigTest.php validates config derivation logic

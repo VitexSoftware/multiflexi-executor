@@ -94,3 +94,28 @@ The repo includes an integration-oriented script under tests/ that schedules a R
 ```
 multiflexi-cli runtemplate schedule --id 1 --format json
 ```
+
+## Kubernetes Executor
+
+The Kubernetes executor (`MultiFlexi\Executor\Kubernetes`) runs jobs as one-shot pods in a Kubernetes cluster using `kubectl run --attach`.
+
+### How it works
+1. **Config derivation**: The executor reconstructs Kubernetes config from existing DB fields — no dedicated kubernetes JSON column is needed:
+   - `helmchart` column → Helm chart URI (OCI or repo reference)
+   - `name` column → Helm release name (lowercased, DNS-1123 safe)
+   - `artifacts` column → artifact output paths for `kubectl cp`
+   - Sensible defaults for namespace (`multiflexi`), timeout (300s), etc.
+2. **Helm pre-deploy**: On first run, if the application is not yet deployed, the executor runs `helm upgrade --install` using the chart from the `helmchart` DB field.
+3. **Job execution**: Creates an ephemeral pod via `kubectl run` with `--restart=Never --attach`, passing environment variables via `--env` flags.
+4. **Artifact collection**: After pod completion, copies artifacts from the pod via `kubectl cp` and stores them in the MultiFlexi FileStore.
+5. **Log capture**: `storeLogs()` fetches pod output via `kubectl logs` after job completion.
+
+### Requirements
+- `kubectl` binary in PATH
+- `helm` binary in PATH (for Helm pre-deployment)
+- Valid kubeconfig at `~/.kube/config` or `$KUBECONFIG`
+- Applications must have `ociimage` set (container image reference)
+- Applications should have `helmchart` set to a valid Helm chart URI for first-time deployment
+
+### File-path environment variables
+File-path config fields from the executor host are skipped for Kubernetes jobs — host paths are not available inside the pod. A warning is logged for each skipped field.

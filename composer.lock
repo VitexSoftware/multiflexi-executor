@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e81b9517f1c0cca4aeee94c8be2c8023",
+    "content-hash": "3f8151631959a600a42eb76fadfb788f",
     "packages": [
         {
             "name": "jalismrs/bitwarden-php",
@@ -43,16 +43,16 @@
         },
         {
             "name": "justinrainbow/json-schema",
-            "version": "v6.7.2",
+            "version": "6.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jsonrainbow/json-schema.git",
-                "reference": "6fea66c7204683af437864e7c4e7abf383d14bc0"
+                "reference": "89ac92bcfe5d0a8a4433c7b89d394553ae7250cc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jsonrainbow/json-schema/zipball/6fea66c7204683af437864e7c4e7abf383d14bc0",
-                "reference": "6fea66c7204683af437864e7c4e7abf383d14bc0",
+                "url": "https://api.github.com/repos/jsonrainbow/json-schema/zipball/89ac92bcfe5d0a8a4433c7b89d394553ae7250cc",
+                "reference": "89ac92bcfe5d0a8a4433c7b89d394553ae7250cc",
                 "shasum": ""
             },
             "require": {
@@ -112,9 +112,9 @@
             ],
             "support": {
                 "issues": "https://github.com/jsonrainbow/json-schema/issues",
-                "source": "https://github.com/jsonrainbow/json-schema/tree/v6.7.2"
+                "source": "https://github.com/jsonrainbow/json-schema/tree/6.8.0"
             },
-            "time": "2026-02-15T15:06:22+00:00"
+            "time": "2026-04-02T12:43:11+00:00"
         },
         {
             "name": "marc-mabe/php-enum",
@@ -804,12 +804,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core.git",
-                "reference": "38c9e1a2508663539c334e321cf85a0d95e7b1e5"
+                "reference": "35e5165f0485dff68e3a343e85210f16d96b7ad1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/VitexSoftware/php-vitexsoftware-multiflexi-core/zipball/38c9e1a2508663539c334e321cf85a0d95e7b1e5",
-                "reference": "38c9e1a2508663539c334e321cf85a0d95e7b1e5",
+                "url": "https://api.github.com/repos/VitexSoftware/php-vitexsoftware-multiflexi-core/zipball/35e5165f0485dff68e3a343e85210f16d96b7ad1",
+                "reference": "35e5165f0485dff68e3a343e85210f16d96b7ad1",
                 "shasum": ""
             },
             "require": {
@@ -854,7 +854,7 @@
                 "issues": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core/issues",
                 "source": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core/tree/main"
             },
-            "time": "2026-03-31T12:44:58+00:00"
+            "time": "2026-04-02T08:36:31+00:00"
         }
     ],
     "packages-dev": [
@@ -2314,8 +2314,8 @@
             "version": "2.2.x-dev",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/6777f6de4a3461761429a3db5954cffcc8a9079e",
-                "reference": "6777f6de4a3461761429a3db5954cffcc8a9079e",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/94bbb6dc30c01167d6eeab784ddff93774986879",
+                "reference": "94bbb6dc30c01167d6eeab784ddff93774986879",
                 "shasum": ""
             },
             "require": {
@@ -2361,7 +2361,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-03-31T15:27:10+00:00"
+            "time": "2026-04-02T13:46:47+00:00"
         },
         {
             "name": "phpstan/phpstan-phpunit",
@@ -2426,12 +2426,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
-                "reference": "f3cd0bd99d73921948e392e0d53b0e3cb3fd6b66"
+                "reference": "8d03d7ad65d574c8e060c43ea5a2cdcaec065666"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/f3cd0bd99d73921948e392e0d53b0e3cb3fd6b66",
-                "reference": "f3cd0bd99d73921948e392e0d53b0e3cb3fd6b66",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/8d03d7ad65d574c8e060c43ea5a2cdcaec065666",
+                "reference": "8d03d7ad65d574c8e060c43ea5a2cdcaec065666",
                 "shasum": ""
             },
             "require": {
@@ -2508,7 +2508,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-03-31T14:33:14+00:00"
+            "time": "2026-04-01T14:14:52+00:00"
         },
         {
             "name": "phpunit/php-file-iterator",
@@ -2813,12 +2813,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "a4084458f8bb7a6b2af0811d25a6d003f747f2b0"
+                "reference": "ebfd9e89c3d4a4a76a1237aa7420632ab9e0232a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/a4084458f8bb7a6b2af0811d25a6d003f747f2b0",
-                "reference": "a4084458f8bb7a6b2af0811d25a6d003f747f2b0",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/ebfd9e89c3d4a4a76a1237aa7420632ab9e0232a",
+                "reference": "ebfd9e89c3d4a4a76a1237aa7420632ab9e0232a",
                 "shasum": ""
             },
             "require": {
@@ -2897,7 +2897,7 @@
                     "type": "other"
                 }
             ],
-            "time": "2026-03-31T14:32:12+00:00"
+            "time": "2026-04-02T15:09:41+00:00"
         },
         {
             "name": "psr/container",
@@ -4694,12 +4694,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "183cfa82c5ce243d8f270b713ae9f719b1012430"
+                "reference": "135f5d690a078fefe30388d04e06c8baea9c1eb5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/183cfa82c5ce243d8f270b713ae9f719b1012430",
-                "reference": "183cfa82c5ce243d8f270b713ae9f719b1012430",
+                "url": "https://api.github.com/repos/symfony/console/zipball/135f5d690a078fefe30388d04e06c8baea9c1eb5",
+                "reference": "135f5d690a078fefe30388d04e06c8baea9c1eb5",
                 "shasum": ""
             },
             "require": {
@@ -4782,7 +4782,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-03-30T15:21:58+00:00"
+            "time": "2026-04-02T14:20:11+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -4862,12 +4862,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/event-dispatcher.git",
-                "reference": "d1dafae23d6c030db415b251f6157caf36fe206c"
+                "reference": "588c93251856e0f1a905b9a455d429ea8d194231"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/event-dispatcher/zipball/d1dafae23d6c030db415b251f6157caf36fe206c",
-                "reference": "d1dafae23d6c030db415b251f6157caf36fe206c",
+                "url": "https://api.github.com/repos/symfony/event-dispatcher/zipball/588c93251856e0f1a905b9a455d429ea8d194231",
+                "reference": "588c93251856e0f1a905b9a455d429ea8d194231",
                 "shasum": ""
             },
             "require": {
@@ -4940,7 +4940,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-03-30T15:21:58+00:00"
+            "time": "2026-04-02T14:20:11+00:00"
         },
         {
             "name": "symfony/event-dispatcher-contracts",
@@ -6126,7 +6126,9 @@
     },
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": {},
+    "platform": {
+        "php": ">=8.1"
+    },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }
