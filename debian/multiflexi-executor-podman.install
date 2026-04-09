@@ -1,3 +1,4 @@
 debian/multiflexi-executor-podman.readme usr/share/doc/multiflexi-executor-podman/
-src/MultiFlexi/Executor/Podman.php       usr/share/php/MultiFlexi/
+src/MultiFlexi/Executor/Podman.php       usr/share/php/MultiFlexi/Executor/
+
 
