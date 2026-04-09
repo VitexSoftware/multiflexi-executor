@@ -25,23 +25,17 @@ Description: execute MultiFlexi jobs
 
 
 Package: multiflexi-executor-docker
-Depends: ${misc:Depends}, php-vitexsoftware-multiflexi-core, docker-ce-cli|docker.io
+Depends: ${misc:Depends}, multiflexi-executor, docker-ce-cli|docker.io
 Replaces: multiflexi-docker
 Architecture: all
 Description: Run MultiFlexi tasks in container
  Run MultiFlexi tasks in Docker container
 
 #Package: multiflexi-executor-podman
-#Depends: ${misc:Depends},multiflexi, podman
+#Depends: ${misc:Depends},multiflexi-executor, podman
 #Architecture: all
 #Description: Run MultiFlexi tasks in container
 # Run MultiFlexi tasks in container
-
-#Package: multiflexi-executor-kubernetes
-#Depends: ${misc:Depends},multiflexi, kubernetes-client
-#Architecture: all
-#Description: Run MultiFlexi tasks on Kubrnetes
-# Run MultiFlexi tasks in big corporation
 
 Package: multiflexi-executor-k8s
 Depends: ${misc:Depends}, multiflexi-executor, kubectl | kubernetes-client
@@ -50,13 +44,13 @@ Description: Run MultiFlexi tasks on Kubernetes
  Run MultiFlexi tasks on Kubernetes clusters using kubectl
 
 Package: multiflexi-executor-podman
-Depends: ${misc:Depends}, php-vitexsoftware-multiflexi-core, podman
+Depends: ${misc:Depends}, multiflexi-executor, podman
 Architecture: all
 Description: Run MultiFlexi tasks in Podman
  Run MultiFlexi tasks in Podman containers
 
 Package: multiflexi-executor-azure
-Depends: ${misc:Depends}, php-vitexsoftware-multiflexi-core, azure-cli
+Depends: ${misc:Depends}, multiflexi-executor, azure-cli
 Architecture: all
 Description: Run MultiFlexi tasks in Azure Containers
  Run MultiFlexi tasks in Azure using `az` CLI
