@@ -54,18 +54,20 @@ Note: src/executor.php and src/daemon.php expect vendor/autoload.php and a .env 
   - From repo root:
     - cd src && php -q -f daemon.php
   - Behavior is controlled via .env. MULTIFLEXI_DAEMONIZE=true runs continuously; MULTIFLEXI_CYCLE_PAUSE controls poll interval (seconds).
+  - Parallel mode: each due job is launched as an isolated executor.php subprocess (Symfony Process). Jobs run concurrently; MULTIFLEXI_MAX_PARALLEL limits the slot count (0 = unlimited). pcntl SIGTERM/SIGINT trigger graceful drain.
 
 Configuration and environment
 
 - Place a .env file at the repository root. The executor reads DB and app settings via Ease\Shared from that file.
-- Expected keys include (driven by MultiFlexi core): DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, APP_DEBUG, MULTIFLEXI_DAEMONIZE, MULTIFLEXI_CYCLE_PAUSE, RESULT_FILE, ZABBIX_SERVER, ZABBIX_HOST.
+- Expected keys: DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, APP_DEBUG, MULTIFLEXI_DAEMONIZE, MULTIFLEXI_CYCLE_PAUSE, MULTIFLEXI_MAX_PARALLEL (0=unlimited parallel jobs), MULTIFLEXI_MEMORY_LIMIT_MB, RESULT_FILE, ZABBIX_SERVER, ZABBIX_HOST.
+- The daemon resolves .env to an absolute path and passes it as -e to every executor.php subprocess, so child processes always find the correct config regardless of CWD.
 - Logging is configured via EASE_LOGGER, automatically assembled based on env and available classes: syslog | \MultiFlexi\LogToSQL | optional \MultiFlexi\LogToZabbix | console (when APP_DEBUG=true).
 
 High-level architecture and flow
 
 - **Production Mode (v2.x+)**: Runs as systemd service ``multiflexi-executor.service`` under the ``multiflexi`` user, continuously polling the ``schedule`` table and executing due jobs
 - **Development Mode**: Can run one-shot executions for a given RunTemplate or as a manual daemon for testing
-- Purpose: multiflexi-executor runs MultiFlexi jobs either as a one-shot execution for a given RunTemplate or as a daemon that continuously dispatches scheduled jobs.
+- Purpose: multiflexi-executor runs MultiFlexi jobs either as a one-shot execution for a given RunTemplate or as a daemon that continuously dispatches scheduled jobs in parallel.
 - Core dependency: vitexsoftware/multiflexi-core provides domain classes used here (e.g., Scheduler, Job, RunTemplate, UnixUser/Anonym, LogToSQL, optional LogToZabbix). This repo focuses on orchestration and process lifecycle; business logic and persistence live in the core.
 - Entrypoints (src/):
   - executor.php (one-shot):
@@ -73,12 +75,19 @@ High-level architecture and flow
     - Two execution modes:
       - Mode 1 (RunTemplate): Resolves a RunTemplate by ID, prepares a new Job (prepareJob), executes it (performJob), prints stdout and stderr streams, and exits with the underlying process exit code.
       - Mode 2 (Job): Loads an existing Job by ID, executes it (performJob), prints stdout and stderr streams, and exits with the underlying process exit code.
+    - Also used as the subprocess target by the daemon for each parallel job.
   - daemon.php (long-running):
     - Initializes config; waits for DB availability (retry loop) before starting.
-    - Main loop:
-      - Scheduler::getCurrentJobs() fetches due jobs; for each, instantiate Job, performJob, then clean up and delete the schedule record.
+    - Main loop (parallel):
+      - Reap completed subprocesses (DaemonHelper::reapCompletedJobs).
+      - Scheduler::getCurrentJobs() fetches due jobs; for each available slot, claim the job (deleteFromSQL) then spawn executor.php as a Symfony Process subprocess.
+      - Each subprocess is fully isolated: own PHP process, own DB connection, own memory.
       - On DB errors, re-enter wait-for-DB and recreate Scheduler.
-      - Sleep between cycles when MULTIFLEXI_DAEMONIZE=true.
+      - Sleep MULTIFLEXI_CYCLE_PAUSE seconds; then repeat.
+    - Shutdown (SIGTERM/SIGINT or memory soft-limit): stop launching new jobs, drain all running subprocesses, then exit.
+- Helper class (src/MultiFlexi/DaemonHelper.php):
+  - Contains the pure scheduling helpers extracted from daemon.php for testability.
+  - isPermanentDatabaseError(), availableSlots(), reapCompletedJobs().
 - Binaries (bin/): installation targets provide shell wrappers that call the installed PHP entrypoint under /usr/lib/multiflexi-executor; for development, use the src/*.php scripts as shown above.
 - Tests (tests/): contains an integration-oriented test script (tests/test.sh) that exercises RunTemplate scheduling via multiflexi-cli. PHPUnit is available for unit tests via vendor/bin/phpunit.
 

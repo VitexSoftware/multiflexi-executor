@@ -12,9 +12,10 @@ See the full list of ready-to-run applications within the MultiFlexi platform on
 [![MultiFlexi App](https://github.com/VitexSoftware/MultiFlexi/blob/main/doc/multiflexi-app.svg)](https://www.multiflexi.eu/)
 
 ## Requirements
-- PHP 8.2+ (daemon parallel mode requires the pcntl extension)
+- PHP 8.2+
 - Composer
 - A configured MultiFlexi database (shared across the suite)
+- Optional: the `pcntl` extension for SIGTERM/SIGINT graceful-shutdown support in the daemon
 
 ## Installation (development)
 ```
@@ -25,16 +26,25 @@ composer install
 Place a .env file at the repository root. The executor reads configuration via Ease\Shared.
 
 Common keys:
-- DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
-- APP_DEBUG=true|false
-- MULTIFLEXI_DAEMONIZE=true|false
-- MULTIFLEXI_CYCLE_PAUSE=10            # seconds between polling cycles when daemonized
-- RESULT_FILE=php://stdout             # default output destination for one-shot runs
-- ZABBIX_SERVER, ZABBIX_HOST           # enable LogToZabbix if available
+| Variable | Default | Description |
+|---|---|---|
+| `DB_CONNECTION` | `mysql` | Database driver (`mysql`, `pgsql`, `sqlite`) |
+| `DB_HOST` | `localhost` | Database host |
+| `DB_PORT` | driver default | Database port |
+| `DB_DATABASE` | — | Database name |
+| `DB_USERNAME` | — | Database user |
+| `DB_PASSWORD` | — | Database password |
+| `APP_DEBUG` | `false` | Log to console when `true` |
+| `MULTIFLEXI_DAEMONIZE` | `true` | Run the daemon continuously |
+| `MULTIFLEXI_CYCLE_PAUSE` | `10` | Seconds between polling cycles |
+| `MULTIFLEXI_MAX_PARALLEL` | `0` | Max concurrent jobs; `0` = unlimited |
+| `MULTIFLEXI_MEMORY_LIMIT_MB` | `0` | Soft memory limit in MB (`0` = disabled) |
+| `RESULT_FILE` | `php://stdout` | Default output destination for one-shot runs |
+| `ZABBIX_SERVER` / `ZABBIX_HOST` | — | Enable `LogToZabbix` when both are set |
 
 Notes:
-- src/executor.php and src/daemon.php expect vendor/autoload.php and .env one directory above. Run them from src/ so relative paths resolve.
-- Parallel execution requires the pcntl extension. On Debian-based systems install the package matching your PHP version (e.g., php8.3-pcntl).
+- `src/executor.php` and `src/daemon.php` expect `vendor/autoload.php` and `.env` one directory above. Run them from `src/` so relative paths resolve.
+- The daemon passes the absolute `.env` path to each job subprocess automatically.
 
 ## Usage
 ### One-shot execution (run a single RunTemplate)
@@ -53,11 +63,13 @@ From repo root:
 cd src && php -q -f daemon.php
 ```
 Behavior:
-- Controlled by .env. When MULTIFLEXI_DAEMONIZE=true, the process runs continuously and sleeps MULTIFLEXI_CYCLE_PAUSE seconds between cycles.
-- Parallel execution: if pcntl is available, due jobs are executed in parallel using forks. Limit concurrency with MULTIFLEXI_MAX_PARALLEL (set 0 for unlimited).
+- Controlled by `.env`. When `MULTIFLEXI_DAEMONIZE=true` the process runs continuously, sleeping `MULTIFLEXI_CYCLE_PAUSE` seconds between polling cycles.
+- **Parallel execution**: each due job is launched as an isolated `executor.php` subprocess. Jobs run concurrently without blocking one another, so a slow job never delays the next timeslot. Each subprocess gets its own PHP process, database connection, and memory — no shared state between jobs.
+- `MULTIFLEXI_MAX_PARALLEL` caps the number of concurrently running subprocesses (`0` = unlimited). When all slots are occupied the daemon waits until a slot frees before launching the next job.
+- On `SIGTERM` or `SIGINT` (requires the `pcntl` extension) the daemon stops accepting new jobs and waits for all in-flight subprocesses to finish before exiting.
 
 Examples:
-```
+```bash
 # Run daemon with up to 4 concurrent jobs
 MULTIFLEXI_MAX_PARALLEL=4 php -q -f src/daemon.php
 

@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace MultiFlexi;
 
 use Ease\Shared;
+use MultiFlexi\DaemonHelper;
 use Symfony\Component\Process\Process;
 
 date_default_timezone_set('Europe/Prague');
@@ -62,19 +63,12 @@ Shared::user(new \MultiFlexi\UnixUser());
  */
 function isPermanentDatabaseError(string $errorMessage): bool
 {
-    // Authentication/credential errors that won't resolve with retries
-    if (str_contains($errorMessage, 'Access denied')
-        || str_contains($errorMessage, '1045')
-        || str_contains($errorMessage, 'authentication')) {
-        error_log(_('Database authentication failed. Check credentials in configuration. Exiting.'));
-
-        return true;
-    }
-
-    // Database doesn't exist
-    if (str_contains($errorMessage, 'Unknown database')
-        || str_contains($errorMessage, '1049')) {
-        error_log(_('Database does not exist. Check database name in configuration. Exiting.'));
+    if (DaemonHelper::isPermanentDatabaseError($errorMessage)) {
+        if (str_contains($errorMessage, 'Access denied') || str_contains($errorMessage, '1045') || str_contains($errorMessage, 'authentication')) {
+            error_log(_('Database authentication failed. Check credentials in configuration. Exiting.'));
+        } else {
+            error_log(_('Database does not exist. Check database name in configuration. Exiting.'));
+        }
 
         return true;
     }
@@ -117,31 +111,6 @@ function waitForDatabase(): void
     }
 }
 
-/**
- * Walk the running-jobs table and remove entries whose subprocesses have exited.
- * Logs non-zero exit codes and any stderr output for visibility.
- *
- * @param array<int, array{process: Process, jobId: int}> $runningJobs Passed by reference
- */
-function reapCompletedJobs(array &$runningJobs): void
-{
-    foreach ($runningJobs as $key => $jobInfo) {
-        if (!$jobInfo['process']->isRunning()) {
-            $exitCode = (int) $jobInfo['process']->getExitCode();
-
-            if ($exitCode !== 0) {
-                error_log(sprintf('Job #%d subprocess exited with code %d', $jobInfo['jobId'], $exitCode));
-                $stderr = trim($jobInfo['process']->getErrorOutput());
-
-                if ($stderr !== '') {
-                    error_log('Job #'.$jobInfo['jobId'].' stderr: '.$stderr);
-                }
-            }
-
-            unset($runningJobs[$key]);
-        }
-    }
-}
 
 waitForDatabase();
 $scheduler = new Scheduler();
@@ -183,14 +152,11 @@ do {
     }
 
     // Collect finished subprocesses before trying to launch more.
-    reapCompletedJobs($runningJobs);
+    DaemonHelper::reapCompletedJobs($runningJobs);
 
     if (!$shutdown) {
         // How many new jobs may we start this cycle?
-        $currentCount = count($runningJobs);
-        $slotsAvailable = $maxParallel > 0
-            ? max(0, $maxParallel - $currentCount)
-            : \PHP_INT_MAX;
+        $slotsAvailable = DaemonHelper::availableSlots($maxParallel, count($runningJobs));
 
         if ($slotsAvailable > 0) {
             try {
@@ -258,7 +224,7 @@ if (!empty($runningJobs)) {
     error_log(sprintf('Shutdown: waiting for %d running job(s) to complete…', count($runningJobs)));
 
     while (!empty($runningJobs)) {
-        reapCompletedJobs($runningJobs);
+        DaemonHelper::reapCompletedJobs($runningJobs);
         sleep(1);
     }
 }
