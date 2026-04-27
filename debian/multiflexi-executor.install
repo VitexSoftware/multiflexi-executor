@@ -1,4 +1,5 @@
 bin/*                   usr/bin/
 src/*.php		usr/share/multiflexi-executor
+src/MultiFlexi/DaemonHelper.php	usr/share/php/MultiFlexi/
 composer.json		usr/share/php/MultiFlexi/Executor/
 debian/autoload.php	usr/share/php/MultiFlexi/Executor/
