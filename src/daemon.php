@@ -22,6 +22,7 @@ use Symfony\Component\Process\Process;
 date_default_timezone_set('Europe/Prague');
 
 require_once '../vendor/autoload.php';
+require_once __DIR__.'/MultiFlexi/DaemonHelper.php';
 
 // Optional memory limit override from environment (in megabytes). If set, we will
 // monitor current usage and gracefully exit before the OOM killer intervenes.
