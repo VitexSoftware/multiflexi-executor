@@ -62,7 +62,7 @@ Description: Run MultiFlexi tasks in Azure Containers
  Run MultiFlexi tasks in Azure using `az` CLI
 
 Package: multiflexi-executor-dev
-Depends: ${misc:Depends}, multiflexi-executor
+Depends: ${misc:Depends}, multiflexi-executor, multiflexi-probe
 Architecture: all
 Description: Development helpers for MultiFlexi executor
  Includes test helpers and fake executor for development and CI
