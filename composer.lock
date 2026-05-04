@@ -7,71 +7,6 @@
     "content-hash": "3f8151631959a600a42eb76fadfb788f",
     "packages": [
         {
-            "name": "dragonmantank/cron-expression",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/dragonmantank/cron-expression.git",
-                "reference": "d425a2403c17d7cf911c55a7170f073979a9f382"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/dragonmantank/cron-expression/zipball/d425a2403c17d7cf911c55a7170f073979a9f382",
-                "reference": "d425a2403c17d7cf911c55a7170f073979a9f382",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.2|^8.3|^8.4|^8.5"
-            },
-            "replace": {
-                "mtdowling/cron-expression": "^1.0"
-            },
-            "require-dev": {
-                "phpstan/extension-installer": "^1.4.3",
-                "phpstan/phpstan": "^2.1.31",
-                "phpunit/phpunit": "^11.5.43 || ^12.4"
-            },
-            "default-branch": true,
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "3.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Cron\\": "src/Cron/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Chris Tankersley",
-                    "email": "chris@ctankersley.com",
-                    "homepage": "https://github.com/dragonmantank"
-                }
-            ],
-            "description": "CRON for PHP: Calculate the next or previous run date and determine if a CRON expression is due",
-            "keywords": [
-                "cron",
-                "schedule"
-            ],
-            "support": {
-                "issues": "https://github.com/dragonmantank/cron-expression/issues",
-                "source": "https://github.com/dragonmantank/cron-expression/tree/master"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/dragonmantank",
-                    "type": "github"
-                }
-            ],
-            "time": "2025-12-20T20:18:24+00:00"
-        },
-        {
             "name": "jalismrs/bitwarden-php",
             "version": "1.2.0",
             "source": {
@@ -672,12 +607,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/VitexSoftware/php-ease-fluentpdo.git",
-                "reference": "60ee1c3f0f3d693792b1a281223857bc829cf708"
+                "reference": "ef54aee6e213aff582228d18ca608e5131728872"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/VitexSoftware/php-ease-fluentpdo/zipball/60ee1c3f0f3d693792b1a281223857bc829cf708",
-                "reference": "60ee1c3f0f3d693792b1a281223857bc829cf708",
+                "url": "https://api.github.com/repos/VitexSoftware/php-ease-fluentpdo/zipball/ef54aee6e213aff582228d18ca608e5131728872",
+                "reference": "ef54aee6e213aff582228d18ca608e5131728872",
                 "shasum": ""
             },
             "require": {
@@ -725,7 +660,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2026-04-21T13:19:07+00:00"
+            "time": "2026-03-19T12:00:17+00:00"
         },
         {
             "name": "vitexsoftware/ease-html",
@@ -869,16 +804,15 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core.git",
-                "reference": "333a8dd3a45c41533fbd762d2239476735e7446c"
+                "reference": "70872b72de6451f4c084ac7162c8a5f362d51d20"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/VitexSoftware/php-vitexsoftware-multiflexi-core/zipball/333a8dd3a45c41533fbd762d2239476735e7446c",
-                "reference": "333a8dd3a45c41533fbd762d2239476735e7446c",
+                "url": "https://api.github.com/repos/VitexSoftware/php-vitexsoftware-multiflexi-core/zipball/70872b72de6451f4c084ac7162c8a5f362d51d20",
+                "reference": "70872b72de6451f4c084ac7162c8a5f362d51d20",
                 "shasum": ""
             },
             "require": {
-                "dragonmantank/cron-expression": "^3.3",
                 "jalismrs/bitwarden-php": "^1.1",
                 "justinrainbow/json-schema": "^6.6@dev",
                 "vitexsoftware/ease-core": "^1.50",
@@ -903,7 +837,6 @@
                     "MultiFlexi\\Action\\": "src/MultiFlexi/Action",
                     "MultiFlexi\\Zabbix\\": "src/MultiFlexi/Zabbix",
                     "MultiFlexi\\Executor\\": "src/MultiFlexi/Executor",
-                    "MultiFlexi\\Reporting\\": "src/MultiFlexi/Reporting",
                     "MultiFlexi\\CredentialProtoType\\": "src/MultiFlexi/CredentialProtoType"
                 }
             },
@@ -921,7 +854,7 @@
                 "issues": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core/issues",
                 "source": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core/tree/main"
             },
-            "time": "2026-04-23T12:45:17+00:00"
+            "time": "2026-04-19T17:50:00+00:00"
         }
     ],
     "packages-dev": [
@@ -2454,8 +2387,8 @@
             "version": "2.2.x-dev",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/693289357f64ad4bba490faffd49ec1c1913ad2d",
-                "reference": "693289357f64ad4bba490faffd49ec1c1913ad2d",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/eb16525078568f056d5e185cb3e35e054ae075e3",
+                "reference": "eb16525078568f056d5e185cb3e35e054ae075e3",
                 "shasum": ""
             },
             "require": {
@@ -2512,7 +2445,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-04-23T13:41:56+00:00"
+            "time": "2026-04-19T11:28:21+00:00"
         },
         {
             "name": "phpstan/phpstan-phpunit",
@@ -2577,12 +2510,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-code-coverage.git",
-                "reference": "7ed2925712abab2e05a31de7a97c8b4b91510a41"
+                "reference": "24dc6fcf9f2a983de5b3f1199fb01e88d68e7474"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/7ed2925712abab2e05a31de7a97c8b4b91510a41",
-                "reference": "7ed2925712abab2e05a31de7a97c8b4b91510a41",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-code-coverage/zipball/24dc6fcf9f2a983de5b3f1199fb01e88d68e7474",
+                "reference": "24dc6fcf9f2a983de5b3f1199fb01e88d68e7474",
                 "shasum": ""
             },
             "require": {
@@ -2639,7 +2572,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/php-code-coverage/issues",
                 "security": "https://github.com/sebastianbergmann/php-code-coverage/security/policy",
-                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/main"
+                "source": "https://github.com/sebastianbergmann/php-code-coverage/tree/14.1.3"
             },
             "funding": [
                 {
@@ -2659,7 +2592,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-04-23T13:25:40+00:00"
+            "time": "2026-04-18T05:41:54+00:00"
         },
         {
             "name": "phpunit/php-file-iterator",
@@ -2964,12 +2897,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "0db0ddd8dcd1c0c01ad0d8e6d6233652af7a3aea"
+                "reference": "73ca00b7e905a9921fae6567f87a7e935eb006fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/0db0ddd8dcd1c0c01ad0d8e6d6233652af7a3aea",
-                "reference": "0db0ddd8dcd1c0c01ad0d8e6d6233652af7a3aea",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/73ca00b7e905a9921fae6567f87a7e935eb006fc",
+                "reference": "73ca00b7e905a9921fae6567f87a7e935eb006fc",
                 "shasum": ""
             },
             "require": {
@@ -2993,7 +2926,6 @@
                 "sebastian/diff": "^8.1.0",
                 "sebastian/environment": "^9.3.0",
                 "sebastian/exporter": "^8.0.2",
-                "sebastian/file-filter": "^1.0",
                 "sebastian/git-state": "^1.0",
                 "sebastian/global-state": "^9.0.0",
                 "sebastian/object-enumerator": "^8.0.0",
@@ -3049,7 +2981,7 @@
                     "type": "other"
                 }
             ],
-            "time": "2026-04-23T12:39:57+00:00"
+            "time": "2026-04-20T05:12:11+00:00"
         },
         {
             "name": "psr/container",
@@ -4219,76 +4151,6 @@
             "time": "2026-04-15T12:38:05+00:00"
         },
         {
-            "name": "sebastian/file-filter",
-            "version": "dev-main",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/sebastianbergmann/file-filter.git",
-                "reference": "33a26f394330f6faa7684bb9cc73afb7727aae93"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/file-filter/zipball/33a26f394330f6faa7684bb9cc73afb7727aae93",
-                "reference": "33a26f394330f6faa7684bb9cc73afb7727aae93",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.4"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^13.0"
-            },
-            "default-branch": true,
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "1.0-dev"
-                }
-            },
-            "autoload": {
-                "classmap": [
-                    "src/"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Sebastian Bergmann",
-                    "email": "sebastian@phpunit.de",
-                    "role": "lead"
-                }
-            ],
-            "description": "Library for filtering files",
-            "homepage": "https://github.com/sebastianbergmann/file-filter",
-            "support": {
-                "issues": "https://github.com/sebastianbergmann/file-filter/issues",
-                "security": "https://github.com/sebastianbergmann/file-filter/security/policy",
-                "source": "https://github.com/sebastianbergmann/file-filter/tree/1.0.0"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/sebastianbergmann",
-                    "type": "github"
-                },
-                {
-                    "url": "https://liberapay.com/sebastianbergmann",
-                    "type": "liberapay"
-                },
-                {
-                    "url": "https://thanks.dev/u/gh/sebastianbergmann",
-                    "type": "thanks_dev"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/sebastian/file-filter",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2026-04-22T07:20:04+00:00"
-        },
-        {
             "name": "sebastian/git-state",
             "version": "dev-main",
             "source": {
@@ -4916,12 +4778,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "8c576a888693f99ddcb0bc4ad3acb48761d0bbe1"
+                "reference": "ad665e88b844414e81707b0a33dfe757c65393f7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/8c576a888693f99ddcb0bc4ad3acb48761d0bbe1",
-                "reference": "8c576a888693f99ddcb0bc4ad3acb48761d0bbe1",
+                "url": "https://api.github.com/repos/symfony/console/zipball/ad665e88b844414e81707b0a33dfe757c65393f7",
+                "reference": "ad665e88b844414e81707b0a33dfe757c65393f7",
                 "shasum": ""
             },
             "require": {
@@ -5008,7 +4870,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-04-22T10:29:21+00:00"
+            "time": "2026-04-18T13:52:23+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",

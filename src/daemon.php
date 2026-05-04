@@ -16,15 +16,28 @@ declare(strict_types=1);
 namespace MultiFlexi;
 
 use Ease\Shared;
+use MultiFlexi\DaemonHelper;
+use Symfony\Component\Process\Process;
 
 date_default_timezone_set('Europe/Prague');
 
 require_once '../vendor/autoload.php';
+
 // Optional memory limit override from environment (in megabytes). If set, we will
 // monitor current usage and gracefully exit before the OOM killer intervenes.
 $memorySoftLimitMb = (int) Shared::cfg('MULTIFLEXI_MEMORY_LIMIT_MB', 0);
 Shared::init(['DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD'], '../.env');
 $daemonize = (bool) Shared::cfg('MULTIFLEXI_DAEMONIZE', true);
+
+// Maximum number of concurrently running jobs. 0 means unlimited.
+// Set via MULTIFLEXI_MAX_PARALLEL environment variable.
+// Requires the pcntl extension for signal-based graceful shutdown.
+$maxParallel = (int) Shared::cfg('MULTIFLEXI_MAX_PARALLEL', 0);
+
+// Resolve the .env path to an absolute path so subprocesses can find it
+// regardless of their working directory.
+$envFile = realpath(__DIR__.'/../.env') ?: __DIR__.'/../.env';
+
 $loggers = ['syslog', '\\MultiFlexi\\LogToSQL'];
 
 if (Shared::cfg('ZABBIX_SERVER') && Shared::cfg('ZABBIX_HOST') && class_exists('\\MultiFlexi\\LogToZabbix')) {
@@ -50,19 +63,12 @@ Shared::user(new \MultiFlexi\UnixUser());
  */
 function isPermanentDatabaseError(string $errorMessage): bool
 {
-    // Authentication/credential errors that won't resolve with retries
-    if (str_contains($errorMessage, 'Access denied')
-        || str_contains($errorMessage, '1045')
-        || str_contains($errorMessage, 'authentication')) {
-        error_log(_('Database authentication failed. Check credentials in configuration. Exiting.'));
-
-        return true;
-    }
-
-    // Database doesn't exist
-    if (str_contains($errorMessage, 'Unknown database')
-        || str_contains($errorMessage, '1049')) {
-        error_log(_('Database does not exist. Check database name in configuration. Exiting.'));
+    if (DaemonHelper::isPermanentDatabaseError($errorMessage)) {
+        if (str_contains($errorMessage, 'Access denied') || str_contains($errorMessage, '1045') || str_contains($errorMessage, 'authentication')) {
+            error_log(_('Database authentication failed. Check credentials in configuration. Exiting.'));
+        } else {
+            error_log(_('Database does not exist. Check database name in configuration. Exiting.'));
+        }
 
         return true;
     }
@@ -105,64 +111,122 @@ function waitForDatabase(): void
     }
 }
 
+
 waitForDatabase();
 $scheduler = new Scheduler();
 $scheduler->logBanner('MultiFlexi Executor Daemon started');
 
+// Announce parallelism mode
+if ($maxParallel > 0) {
+    error_log(sprintf('Parallel mode: up to %d concurrent jobs (MULTIFLEXI_MAX_PARALLEL=%d)', $maxParallel, $maxParallel));
+} else {
+    error_log('Parallel mode: unlimited concurrent jobs');
+}
+
+/** @var array<int, array{process: Process, jobId: int}> $runningJobs  keyed by schedule row id */
+$runningJobs = [];
+$shutdown = false;
+
+// Graceful shutdown on SIGTERM / SIGINT: stop launching new jobs and let
+// running ones complete.
+if (\function_exists('pcntl_signal')) {
+    pcntl_async_signals(true);
+    $signalHandler = static function (int $signal) use (&$shutdown): void {
+        error_log(sprintf('Received signal %d — stopping new job launches, waiting for running jobs to finish.', $signal));
+        $shutdown = true;
+    };
+    pcntl_signal(\SIGTERM, $signalHandler);
+    pcntl_signal(\SIGINT, $signalHandler);
+}
+
 do {
-    // Proactive memory safeguard: exit if approaching limit.
+    // Proactive memory safeguard: trigger graceful shutdown if approaching limit.
     if ($memorySoftLimitMb > 0) {
         $usageBytes = memory_get_usage(true);
         $usageMb = (int) ($usageBytes / 1048576);
 
         if ($usageMb >= $memorySoftLimitMb) {
             error_log('Memory soft limit reached ('.$usageMb.' MB of '.$memorySoftLimitMb.' MB). Shutting down daemon gracefully.');
-
-            break; // exits loop to allow banner + normal shutdown.
+            $shutdown = true;
         }
     }
 
-    try {
-        $jobsToLaunch = $scheduler->getCurrentJobs();
+    // Collect finished subprocesses before trying to launch more.
+    DaemonHelper::reapCompletedJobs($runningJobs);
 
-        if (!is_iterable($jobsToLaunch)) {
-            $jobsToLaunch = [];
-        }
-    } catch (\Throwable $e) {
-        $errorMessage = $e->getMessage();
-        error_log('Database error: '.$errorMessage);
+    if (!$shutdown) {
+        // How many new jobs may we start this cycle?
+        $slotsAvailable = DaemonHelper::availableSlots($maxParallel, count($runningJobs));
 
-        // Exit immediately on permanent errors
-        if (isPermanentDatabaseError($errorMessage)) {
-            exit(1);
-        }
+        if ($slotsAvailable > 0) {
+            try {
+                $jobsToLaunch = $scheduler->getCurrentJobs();
 
-        waitForDatabase();
-        $scheduler = new Scheduler();
+                if (!is_iterable($jobsToLaunch)) {
+                    $jobsToLaunch = [];
+                }
+            } catch (\Throwable $e) {
+                $errorMessage = $e->getMessage();
+                error_log('Database error: '.$errorMessage);
 
-        continue;
-    }
+                if (isPermanentDatabaseError($errorMessage)) {
+                    exit(1);
+                }
 
-    foreach ($jobsToLaunch as $scheduledJob) {
-        try {
-            $job = new Job($scheduledJob['job'], ['autoload' => true]);
-
-            if (empty($job->getData()) === false) {
-                $job->performJob();
-            } else {
-                $job->addStatusMessage(sprintf(_('Job #%d Does not exists'), $scheduledJob['job']), 'error');
+                waitForDatabase();
+                $scheduler = new Scheduler();
+                $jobsToLaunch = [];
             }
 
-            $scheduler->deleteFromSQL($scheduledJob['id']);
-            $job->cleanUp();
-        } catch (\Throwable $e) {
-            error_log('Job '.$job->getMyKey().' error: '.$e->getMessage());
+            $launched = 0;
+
+            foreach ($jobsToLaunch as $scheduledJob) {
+                if ($maxParallel > 0 && $launched >= $slotsAvailable) {
+                    // Reached capacity for this cycle; remaining jobs will be
+                    // picked up in a future cycle once slots free up.
+                    break;
+                }
+
+                $scheduleId = (int) $scheduledJob['id'];
+                $jobId = (int) $scheduledJob['job'];
+
+                try {
+                    // Remove from schedule immediately to claim the job and
+                    // prevent another daemon instance from picking it up.
+                    $scheduler->deleteFromSQL($scheduleId);
+
+                    // Spawn executor.php as an isolated subprocess so that
+                    // each job gets its own DB connection, memory space, and
+                    // log context. No timeout — jobs may run arbitrarily long.
+                    $process = new Process(
+                        [PHP_BINARY, __DIR__.'/executor.php', '-j', (string) $jobId, '-e', $envFile],
+                    );
+                    $process->setTimeout(null);
+                    $process->start();
+
+                    $runningJobs[$scheduleId] = ['process' => $process, 'jobId' => $jobId];
+                    ++$launched;
+                } catch (\Throwable $e) {
+                    error_log(sprintf('Failed to launch job #%d: %s', $jobId, $e->getMessage()));
+                }
+            }
         }
     }
 
-    if ($daemonize) {
+    if ($daemonize && !$shutdown) {
         sleep((int) Shared::cfg('MULTIFLEXI_CYCLE_PAUSE', 10));
     }
-} while ($daemonize);
+
+} while ($daemonize && !$shutdown);
+
+// Drain: wait for all in-flight jobs to finish before exiting.
+if (!empty($runningJobs)) {
+    error_log(sprintf('Shutdown: waiting for %d running job(s) to complete…', count($runningJobs)));
+
+    while (!empty($runningJobs)) {
+        DaemonHelper::reapCompletedJobs($runningJobs);
+        sleep(1);
+    }
+}
 
 $scheduler->logBanner('MultiFlexi Daemon ended');
