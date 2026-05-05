@@ -24,7 +24,7 @@ command -v multiflexi-cli &> /dev/null || error_exit "multiflexi-cli is not inst
 echo "Configuring RunTemplate for Kubernetes-based multiflexi-probe execution..."
 
 # Create or update RunTemplate
-multiflexi-cli runtemplate:create \
+multiflexi-cli run-template:create \
     --name="$RUNTEMPLATE_NAME" \
     --description="$RUNTEMPLATE_DESCRIPTION" \
     --script="$PROBE_COMMAND" \
@@ -34,16 +34,14 @@ multiflexi-cli runtemplate:create \
 echo "RunTemplate '$RUNTEMPLATE_NAME' configured successfully"
 
 # Configure Kubernetes execution parameters
-multiflexi-cli runtemplate:set-param \
+multiflexi-cli run-template:update \
     --name="$RUNTEMPLATE_NAME" \
-    --param="namespace" \
-    --value="$KUBERNETES_NAMESPACE" \
+    --config "namespace=$KUBERNETES_NAMESPACE" \
     2>&1 || error_exit "Failed to set Kubernetes namespace parameter"
 
-multiflexi-cli runtemplate:set-param \
+multiflexi-cli run-template:update \
     --name="$RUNTEMPLATE_NAME" \
-    --param="image" \
-    --value="$KUBERNETES_POD_IMAGE" \
+    --config "image=$KUBERNETES_POD_IMAGE" \
     2>&1 || error_exit "Failed to set Kubernetes image parameter"
 
 echo "Kubernetes parameters configured successfully"

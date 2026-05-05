@@ -1,1 +1,1 @@
-multiflexi-cli runtemplate schedule --id 1 --format json
+multiflexi-cli run-template:schedule --id 1 --format json
