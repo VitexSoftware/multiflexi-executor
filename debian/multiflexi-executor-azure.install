@@ -1,3 +1,5 @@
 debian/multiflexi-executor-azure.readme usr/share/doc/multiflexi-executor-azure/
 src/MultiFlexi/Executor/Azure.php       usr/share/php/MultiFlexi/Executor/
+multiflexi-executor-azure.svg usr/share/icons/hicolor/scalable/apps/
+multiflexi-executor-azure.metainfo.xml usr/share/metainfo/
 

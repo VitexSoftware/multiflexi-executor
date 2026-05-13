@@ -23,19 +23,12 @@ Description: execute MultiFlexi jobs
  Execute once scheduled job in MultiFlexi and store its
  result.
 
-
 Package: multiflexi-executor-docker
 Depends: ${misc:Depends}, multiflexi-executor, docker-ce-cli|docker.io
 Replaces: multiflexi-docker
 Architecture: all
 Description: Run MultiFlexi tasks in container
  Run MultiFlexi tasks in Docker container
-
-#Package: multiflexi-executor-podman
-#Depends: ${misc:Depends},multiflexi-executor, podman
-#Architecture: all
-#Description: Run MultiFlexi tasks in container
-# Run MultiFlexi tasks in container
 
 Package: multiflexi-executor-k8s
 Depends: ${misc:Depends}, multiflexi-executor, kubectl | kubernetes-client
@@ -49,11 +42,12 @@ Architecture: all
 Description: Run MultiFlexi tasks in Podman
  Run MultiFlexi tasks in Podman containers
 
-Package: multiflexi-executor-azure
-Depends: ${misc:Depends}, multiflexi-executor, azure-cli
-Architecture: all
-Description: Run MultiFlexi tasks in Azure Containers
- Run MultiFlexi tasks in Azure using `az` CLI
+# Azure support was Disabled until azure-cli isn't in all distributions
+#Package: multiflexi-executor-azure
+#Depends: ${misc:Depends}, multiflexi-executor, azure-cli
+#Architecture: all
+#Description: Run MultiFlexi tasks in Azure Containers
+# Run MultiFlexi tasks in Azure using `az` CLI
 
 Package: multiflexi-executor-dev
 Depends: ${misc:Depends}, multiflexi-executor, multiflexi-probe

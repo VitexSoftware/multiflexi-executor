@@ -16,7 +16,6 @@ declare(strict_types=1);
 namespace MultiFlexi;
 
 use Ease\Shared;
-use MultiFlexi\DaemonHelper;
 use Symfony\Component\Process\Process;
 
 date_default_timezone_set('Europe/Prague');
@@ -111,7 +110,6 @@ function waitForDatabase(): void
     }
 }
 
-
 waitForDatabase();
 $scheduler = new Scheduler();
 $scheduler->logBanner('MultiFlexi Executor Daemon started');
@@ -156,7 +154,7 @@ do {
 
     if (!$shutdown) {
         // How many new jobs may we start this cycle?
-        $slotsAvailable = DaemonHelper::availableSlots($maxParallel, count($runningJobs));
+        $slotsAvailable = DaemonHelper::availableSlots($maxParallel, \count($runningJobs));
 
         if ($slotsAvailable > 0) {
             try {
@@ -198,9 +196,7 @@ do {
                     // Spawn executor.php as an isolated subprocess so that
                     // each job gets its own DB connection, memory space, and
                     // log context. No timeout — jobs may run arbitrarily long.
-                    $process = new Process(
-                        [PHP_BINARY, __DIR__.'/executor.php', '-j', (string) $jobId, '-e', $envFile],
-                    );
+                    $process = new Process([\PHP_BINARY, __DIR__.'/executor.php', '-j', (string) $jobId, '-e', $envFile]);
                     $process->setTimeout(null);
                     $process->start();
 
@@ -216,12 +212,11 @@ do {
     if ($daemonize && !$shutdown) {
         sleep((int) Shared::cfg('MULTIFLEXI_CYCLE_PAUSE', 10));
     }
-
 } while ($daemonize && !$shutdown);
 
 // Drain: wait for all in-flight jobs to finish before exiting.
 if (!empty($runningJobs)) {
-    error_log(sprintf('Shutdown: waiting for %d running job(s) to complete…', count($runningJobs)));
+    error_log(sprintf('Shutdown: waiting for %d running job(s) to complete…', \count($runningJobs)));
 
     while (!empty($runningJobs)) {
         DaemonHelper::reapCompletedJobs($runningJobs);

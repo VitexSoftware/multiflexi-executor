@@ -1,27 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<component type="console-application">
-  <id>cz.vitexsoftware.multiflexi_executor</id>
-  <icon type="stock">multiflexi-executor</icon>
+<component type="addon">
+  <id>cz.vitexsoftware.multiflexi_executor_azure</id>
+  <icon type="stock">multiflexi-executor-azure</icon>
+  <extends>cz.vitexsoftware.multiflexi_executor</extends>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
-  <name>multiflexi-executor</name>
-  <summary>execute MultiFlexi jobs</summary>
+  <name>multiflexi-executor-azure</name>
+  <summary>Run MultiFlexi tasks in Azure Containers</summary>
   <description>
     <p>
-      Execute once scheduled job in MultiFlexi and store its result. Run MultiFlexi tasks in Docker container
+      This package provides the Azure executor helper for MultiFlexi and requires the `az` CLI to be installed (azure-cli).
     </p>
   </description>
   <categories>
     <category>System</category>
     <category>ConsoleOnly</category>
   </categories>
-  <url type="homepage">https://github.com/VitexSoftware/multiflexi-executor</url>
+  <url type="homepage">https://multiflexi.eu/</url>
   <url type="bugtracker">https://github.com/VitexSoftware/multiflexi-executor/issues</url>
   <developer id="cz.vitexsoftware">
     <name>VitexSoftware</name>
   </developer>
   <provides>
-    <binary>multiflexi-executor</binary>
+    <binary>multiflexi-executor-azure</binary>
   </provides>
   <content_rating type="oars-1.1"/>
 </component>

@@ -47,7 +47,7 @@ class DaemonHelper
     /**
      * Calculate how many new job subprocesses may be started.
      *
-     * @param int $maxParallel Configured limit (0 = unlimited)
+     * @param int $maxParallel    Configured limit (0 = unlimited)
      * @param int $currentRunning Number of currently running subprocesses
      *
      * @return int Available slots; PHP_INT_MAX when limit is 0 (unlimited)

@@ -30,58 +30,42 @@ class ParallelDaemonTest extends TestCase
 
     public function testAccessDeniedIsPermanent(): void
     {
-        $this->assertTrue(
-            DaemonHelper::isPermanentDatabaseError("SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost'"),
-        );
+        $this->assertTrue(DaemonHelper::isPermanentDatabaseError("SQLSTATE[HY000] [1045] Access denied for user 'root'@'localhost'"));
     }
 
     public function testErrorCode1045IsPermanent(): void
     {
-        $this->assertTrue(
-            DaemonHelper::isPermanentDatabaseError('error 1045: authentication failure'),
-        );
+        $this->assertTrue(DaemonHelper::isPermanentDatabaseError('error 1045: authentication failure'));
     }
 
     public function testAuthenticationKeywordIsPermanent(): void
     {
-        $this->assertTrue(
-            DaemonHelper::isPermanentDatabaseError('authentication failed: bad password'),
-        );
+        $this->assertTrue(DaemonHelper::isPermanentDatabaseError('authentication failed: bad password'));
     }
 
     public function testUnknownDatabaseIsPermanent(): void
     {
-        $this->assertTrue(
-            DaemonHelper::isPermanentDatabaseError("Unknown database 'multiflexi'"),
-        );
+        $this->assertTrue(DaemonHelper::isPermanentDatabaseError("Unknown database 'multiflexi'"));
     }
 
     public function testErrorCode1049IsPermanent(): void
     {
-        $this->assertTrue(
-            DaemonHelper::isPermanentDatabaseError('SQLSTATE[HY000] [1049] error 1049'),
-        );
+        $this->assertTrue(DaemonHelper::isPermanentDatabaseError('SQLSTATE[HY000] [1049] error 1049'));
     }
 
     public function testConnectionRefusedIsTransient(): void
     {
-        $this->assertFalse(
-            DaemonHelper::isPermanentDatabaseError('Connection refused'),
-        );
+        $this->assertFalse(DaemonHelper::isPermanentDatabaseError('Connection refused'));
     }
 
     public function testNetworkTimeoutIsTransient(): void
     {
-        $this->assertFalse(
-            DaemonHelper::isPermanentDatabaseError('SQLSTATE[HY000] [2002] Connection timed out'),
-        );
+        $this->assertFalse(DaemonHelper::isPermanentDatabaseError('SQLSTATE[HY000] [2002] Connection timed out'));
     }
 
     public function testGenericPdoErrorIsTransient(): void
     {
-        $this->assertFalse(
-            DaemonHelper::isPermanentDatabaseError('General error: 2006 MySQL server has gone away'),
-        );
+        $this->assertFalse(DaemonHelper::isPermanentDatabaseError('General error: 2006 MySQL server has gone away'));
     }
 
     // ------------------------------------------------------------------ //
