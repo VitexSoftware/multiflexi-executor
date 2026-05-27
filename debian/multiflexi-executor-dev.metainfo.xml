@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="addon">
   <id>cz.vitexsoftware.multiflexi_executor_dev</id>
-  <icon type="stock">multiflexi-executor</icon>
+  <icon type="stock">multiflexi-executor-dev</icon>
   <extends>cz.vitexsoftware.multiflexi_executor</extends>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
