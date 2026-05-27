@@ -1,5 +1,5 @@
 debian/multiflexi-executor-k8s.readme  usr/share/doc/multiflexi-executor-k8s/
 src/MultiFlexi/Executor/Kubernetes.php usr/share/php/MultiFlexi/Executor/
 multiflexi-executor-k8s.svg usr/share/icons/hicolor/scalable/apps/
-multiflexi-executor-k8s.metainfo.xml usr/share/metainfo/
+debian/multiflexi-executor-k8s.metainfo.xml usr/share/metainfo/
 
