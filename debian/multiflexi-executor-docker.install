@@ -1,5 +1,5 @@
 Containerfile                          usr/share/multiflexi-executor/
 src/MultiFlexi/Executor/Docker.php     usr/share/php/MultiFlexi/Executor/
 multiflexi-executor-docker.svg usr/share/icons/hicolor/scalable/apps/
-multiflexi-executor-docker.metainfo.xml usr/share/metainfo/
+debian/multiflexi-executor-docker.metainfo.xml usr/share/metainfo/
 
