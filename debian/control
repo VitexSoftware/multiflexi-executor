@@ -31,7 +31,8 @@ Description: Run MultiFlexi tasks in container
  Run MultiFlexi tasks in Docker container
 
 Package: multiflexi-executor-k8s
-Depends: ${misc:Depends}, multiflexi-executor, kubectl | kubernetes-client
+Depends: ${misc:Depends}, multiflexi-executor
+Recommends: kubectl | kubernetes-client
 Architecture: all
 Description: Run MultiFlexi tasks on Kubernetes
  Run MultiFlexi tasks on Kubernetes clusters using kubectl

@@ -92,6 +92,16 @@ distributions.each { distro ->
                         def debconf_debug = 0 //Set to "5" or "developer" to debug debconf
                         sh 'cd $WORKSPACE/dist/debian/ ; dpkg-scanpackages . /dev/null > Packages; gzip -9c Packages > Packages.gz; cd $WORKSPACE'
                         sh 'echo "deb [trusted=yes] file://///$WORKSPACE/dist/debian/ ./" | sudo tee /etc/apt/sources.list.d/local.list'
+                        // kubectl is only in Debian trixie+; inject pkgs.k8s.io for distros that lack it
+                        if (distroFamily == 'ubuntu' || distroCode == 'bookworm') {
+                            sh '''
+                                sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+                                curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key \
+                                  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+                                echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /" \
+                                  | sudo tee /etc/apt/sources.list.d/kubernetes.list
+                            '''
+                        }
                         sh 'sudo apt-get update --allow-releaseinfo-change'
                         sh 'echo "INSTALATION"'
                       
