@@ -109,7 +109,7 @@ class ParallelDaemonTest extends TestCase
     {
         $process = $this->mockProcess(running: false, exitCode: 0);
 
-        $jobs = [42 => ['process' => $process, 'jobId' => 100]];
+        $jobs = [42 => ['process' => $process, 'jobId' => 100, 'runtemplateId' => 5]];
 
         DaemonHelper::reapCompletedJobs($jobs);
 
@@ -120,7 +120,7 @@ class ParallelDaemonTest extends TestCase
     {
         $process = $this->mockProcess(running: true);
 
-        $jobs = [42 => ['process' => $process, 'jobId' => 100]];
+        $jobs = [42 => ['process' => $process, 'jobId' => 100, 'runtemplateId' => 5]];
 
         DaemonHelper::reapCompletedJobs($jobs);
 
@@ -131,7 +131,7 @@ class ParallelDaemonTest extends TestCase
     {
         $process = $this->mockProcess(running: false, exitCode: 1, stderr: 'something went wrong');
 
-        $jobs = [7 => ['process' => $process, 'jobId' => 99]];
+        $jobs = [7 => ['process' => $process, 'jobId' => 99, 'runtemplateId' => 3]];
 
         // Must not throw; error_log is the side-effect, not an exception.
         DaemonHelper::reapCompletedJobs($jobs);
@@ -145,8 +145,8 @@ class ParallelDaemonTest extends TestCase
         $doneProcess = $this->mockProcess(running: false, exitCode: 0);
 
         $jobs = [
-            1 => ['process' => $runningProcess, 'jobId' => 10],
-            2 => ['process' => $doneProcess, 'jobId' => 20],
+            1 => ['process' => $runningProcess, 'jobId' => 10, 'runtemplateId' => 1],
+            2 => ['process' => $doneProcess,    'jobId' => 20, 'runtemplateId' => 2],
         ];
 
         DaemonHelper::reapCompletedJobs($jobs);
@@ -161,7 +161,7 @@ class ParallelDaemonTest extends TestCase
         $jobs = [];
 
         for ($i = 0; $i < 5; ++$i) {
-            $jobs[$i] = ['process' => $this->mockProcess(running: false, exitCode: 0), 'jobId' => $i + 1];
+            $jobs[$i] = ['process' => $this->mockProcess(running: false, exitCode: 0), 'jobId' => $i + 1, 'runtemplateId' => $i + 10];
         }
 
         DaemonHelper::reapCompletedJobs($jobs);
@@ -174,6 +174,63 @@ class ParallelDaemonTest extends TestCase
         $jobs = [];
         DaemonHelper::reapCompletedJobs($jobs);
         $this->assertEmpty($jobs);
+    }
+
+    // ------------------------------------------------------------------ //
+    // isRuntemplateRunning                                                 //
+    // ------------------------------------------------------------------ //
+
+    public function testReturnsFalseForEmptyJobList(): void
+    {
+        $this->assertFalse(DaemonHelper::isRuntemplateRunning([], 42));
+    }
+
+    public function testReturnsFalseForZeroRuntemplateId(): void
+    {
+        $jobs = [1 => ['process' => $this->mockProcess(running: true), 'jobId' => 10, 'runtemplateId' => 0]];
+        $this->assertFalse(DaemonHelper::isRuntemplateRunning($jobs, 0));
+    }
+
+    public function testReturnsFalseForNegativeRuntemplateId(): void
+    {
+        $jobs = [1 => ['process' => $this->mockProcess(running: true), 'jobId' => 10, 'runtemplateId' => 5]];
+        $this->assertFalse(DaemonHelper::isRuntemplateRunning($jobs, -1));
+    }
+
+    public function testReturnsTrueWhenRuntemplateIsRunning(): void
+    {
+        $jobs = [
+            1 => ['process' => $this->mockProcess(running: true), 'jobId' => 10, 'runtemplateId' => 201],
+        ];
+        $this->assertTrue(DaemonHelper::isRuntemplateRunning($jobs, 201));
+    }
+
+    public function testReturnsFalseWhenDifferentRuntemplateIsRunning(): void
+    {
+        $jobs = [
+            1 => ['process' => $this->mockProcess(running: true), 'jobId' => 10, 'runtemplateId' => 100],
+        ];
+        $this->assertFalse(DaemonHelper::isRuntemplateRunning($jobs, 201));
+    }
+
+    public function testDetectsConflictAmongMultipleRunningJobs(): void
+    {
+        $jobs = [
+            1 => ['process' => $this->mockProcess(running: true), 'jobId' => 10, 'runtemplateId' => 5],
+            2 => ['process' => $this->mockProcess(running: true), 'jobId' => 20, 'runtemplateId' => 201],
+            3 => ['process' => $this->mockProcess(running: true), 'jobId' => 30, 'runtemplateId' => 7],
+        ];
+        $this->assertTrue(DaemonHelper::isRuntemplateRunning($jobs, 201));
+        $this->assertFalse(DaemonHelper::isRuntemplateRunning($jobs, 999));
+    }
+
+    public function testJobWithoutRuntemplateIdFieldIsIgnored(): void
+    {
+        // Older entries in the map may lack the runtemplateId key.
+        $jobs = [
+            1 => ['process' => $this->mockProcess(running: true), 'jobId' => 10],
+        ];
+        $this->assertFalse(DaemonHelper::isRuntemplateRunning($jobs, 10));
     }
 
     // ------------------------------------------------------------------ //

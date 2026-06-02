@@ -65,6 +65,7 @@ cd src && php -q -f daemon.php
 Behavior:
 - Controlled by `.env`. When `MULTIFLEXI_DAEMONIZE=true` the process runs continuously, sleeping `MULTIFLEXI_CYCLE_PAUSE` seconds between polling cycles.
 - **Parallel execution**: each due job is launched as an isolated `executor.php` subprocess. Jobs run concurrently without blocking one another, so a slow job never delays the next timeslot. Each subprocess gets its own PHP process, database connection, and memory — no shared state between jobs.
+- **Per-runtemplate serialisation**: the daemon will not start a new job if another job from the same RunTemplate is already in flight. The queued entry is left untouched and picked up automatically once the running job finishes. This prevents duplicate side-effects (e.g. double bank-statement imports) when a long-running job overlaps its next scheduled trigger.
 - `MULTIFLEXI_MAX_PARALLEL` caps the number of concurrently running subprocesses (`0` = unlimited). When all slots are occupied the daemon waits until a slot frees before launching the next job.
 - On `SIGTERM` or `SIGINT` (requires the `pcntl` extension) the daemon stops accepting new jobs and waits for all in-flight subprocesses to finish before exiting.
 

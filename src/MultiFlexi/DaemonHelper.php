@@ -62,6 +62,29 @@ class DaemonHelper
     }
 
     /**
+     * Check whether any currently running job belongs to the given runtemplate.
+     *
+     * Returns false immediately for non-positive IDs so callers do not need to
+     * guard against unresolved (zero) runtemplate values.
+     *
+     * @param array<int, array{process: Process, jobId: int, runtemplateId: int}> $runningJobs
+     */
+    public static function isRuntemplateRunning(array $runningJobs, int $runtemplateId): bool
+    {
+        if ($runtemplateId <= 0) {
+            return false;
+        }
+
+        foreach ($runningJobs as $job) {
+            if (isset($job['runtemplateId']) && $job['runtemplateId'] === $runtemplateId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Remove completed job subprocesses from the tracking array.
      * Logs non-zero exit codes and any stderr output.
      *

@@ -1,3 +1,11 @@
+multiflexi-executor (1.15.0) unstable; urgency=medium
+
+  * Prevent parallel execution of jobs from the same RunTemplate
+  * Add DaemonHelper::isRuntemplateRunning() helper and unit tests
+  * Document per-runtemplate serialisation in README
+
+ -- vitex <info@vitexsoftware.cz>  Mon, 02 Jun 2026 08:00:00 +0200
+
 multiflexi-executor (1.14.2) unstable; urgency=medium
 
   * update for vitexsoftware/fluentpdo

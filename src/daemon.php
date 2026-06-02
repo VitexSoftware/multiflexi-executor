@@ -178,16 +178,6 @@ do {
 
             $launched = 0;
 
-            // Build a set of runtemplate IDs that are currently running so we
-            // can skip jobs whose runtemplate is already in flight.
-            $runningRuntemplateIds = [];
-
-            foreach ($runningJobs as $rj) {
-                if (isset($rj['runtemplateId']) && $rj['runtemplateId'] > 0) {
-                    $runningRuntemplateIds[$rj['runtemplateId']] = true;
-                }
-            }
-
             $runtemplateStmt = $scheduler->getPdo()->prepare('SELECT runtemplate_id FROM job WHERE id = :id');
 
             foreach ($jobsToLaunch as $scheduledJob) {
@@ -207,7 +197,7 @@ do {
                 // Skip if another job from the same runtemplate is already running.
                 // Leave the schedule entry untouched so it is picked up as soon as
                 // the in-flight job finishes.
-                if ($runtemplateId > 0 && isset($runningRuntemplateIds[$runtemplateId])) {
+                if (DaemonHelper::isRuntemplateRunning($runningJobs, $runtemplateId)) {
                     error_log(sprintf('Skipping job #%d: runtemplate #%d already running', $jobId, $runtemplateId));
 
                     continue;
@@ -226,11 +216,6 @@ do {
                     $process->start();
 
                     $runningJobs[$scheduleId] = ['process' => $process, 'jobId' => $jobId, 'runtemplateId' => $runtemplateId];
-
-                    if ($runtemplateId > 0) {
-                        $runningRuntemplateIds[$runtemplateId] = true;
-                    }
-
                     ++$launched;
                 } catch (\Throwable $e) {
                     error_log(sprintf('Failed to launch job #%d: %s', $jobId, $e->getMessage()));
