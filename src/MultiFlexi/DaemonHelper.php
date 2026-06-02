@@ -65,7 +65,7 @@ class DaemonHelper
      * Remove completed job subprocesses from the tracking array.
      * Logs non-zero exit codes and any stderr output.
      *
-     * @param array<int, array{process: Process, jobId: int}> $runningJobs Passed by reference
+     * @param array<int, array{process: Process, jobId: int, runtemplateId: int}> $runningJobs Passed by reference
      */
     public static function reapCompletedJobs(array &$runningJobs): void
     {
