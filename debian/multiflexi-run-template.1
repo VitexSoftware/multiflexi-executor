@@ -1,0 +1,48 @@
+.TH MULTIFLEXI\-RUN\-TEMPLATE 1 "June 2026" "multiflexi-executor 1.15.0" "MultiFlexi"
+.SH NAME
+multiflexi\-run\-template \- run a MultiFlexi RunTemplate immediately
+.SH SYNOPSIS
+.B multiflexi\-run\-template
+.B \-r
+.I RUNTEMPLATE_ID
+.RB [ \-o
+.IR OUTPUT_FILE ]
+.RB [ \-e
+.IR ENV_FILE ]
+.SH DESCRIPTION
+.B multiflexi\-run\-template
+is a convenience alias for
+.B multiflexi\-executor \-r
+.IR RUNTEMPLATE_ID .
+It creates a transient job record from the specified RunTemplate and
+executes it synchronously, writing output to stdout (or
+.IR OUTPUT_FILE ).
+.SH OPTIONS
+.TP
+.BI \-r " RUNTEMPLATE_ID" ", \-\-runtemplate=" RUNTEMPLATE_ID
+Numeric RunTemplate ID to execute.
+This option is required.
+.TP
+.BI \-o " FILE" ", \-\-output=" FILE
+Redirect captured output to
+.I FILE
+(default: stdout or
+.BR RESULT_FILE ).
+.TP
+.BI \-e " FILE" ", \-\-environment=" FILE
+Path to the
+.I .env
+configuration file
+(default:
+.IR ../.env ).
+.SH ENVIRONMENT
+See
+.BR multiflexi-executor (8)
+for the full list of recognised environment variables.
+.SH EXIT STATUS
+Mirrors the exit code of the executed job process.
+.SH SEE ALSO
+.BR multiflexi-executor (8),
+.BR multiflexi-scheduler (8)
+.SH AUTHOR
+Vítězslav Dvořák <info@vitexsoftware.cz>

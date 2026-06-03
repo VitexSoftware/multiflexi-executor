@@ -1,0 +1,139 @@
+.TH MULTIFLEXI\-EXECUTOR 8 "June 2026" "multiflexi-executor 1.15.0" "MultiFlexi"
+.SH NAME
+multiflexi\-executor \- execute a MultiFlexi job or run a RunTemplate
+.SH SYNOPSIS
+.B multiflexi\-executor
+.B \-j
+.I JOB_ID
+.RB [ \-e
+.IR ENV_FILE ]
+.RB [ \-o
+.IR OUTPUT_FILE ]
+.br
+.B multiflexi\-executor
+.B \-r
+.I RUNTEMPLATE_ID
+.RB [ \-e
+.IR ENV_FILE ]
+.RB [ \-o
+.IR OUTPUT_FILE ]
+.SH DESCRIPTION
+.B multiflexi\-executor
+runs a single MultiFlexi job either by referencing an existing job record
+.RB ( \-j )
+or by creating a new one on-the-fly from a RunTemplate
+.RB ( \-r ).
+.PP
+It is designed for one-shot execution.
+For continuous, daemon-mode operation (polling the schedule queue and
+launching jobs automatically) see the
+.B multiflexi\-executor
+systemd service, which runs
+.I /usr/share/multiflexi-executor/daemon.php
+in the background.
+.SH OPTIONS
+.TP
+.BI \-j " JOB_ID" ", \-\-job=" JOB_ID
+Execute an existing job identified by its numeric database ID.
+.TP
+.BI \-r " RUNTEMPLATE_ID" ", \-\-runtemplate=" RUNTEMPLATE_ID
+Create a new job from the given RunTemplate and execute it immediately.
+.TP
+.BI \-o " FILE" ", \-\-output=" FILE
+Write captured job output to
+.IR FILE
+instead of stdout.
+Defaults to the value of
+.B RESULT_FILE
+or
+.IR php://stdout .
+.TP
+.BI \-e " FILE" ", \-\-environment=" FILE
+Path to the
+.I .env
+configuration file.
+Defaults to
+.I ../.env
+relative to the script.
+.SH ENVIRONMENT
+.TP
+.B DB_CONNECTION
+Database driver:
+.BR mysql ", " pgsql ", " sqlite " (default: mysql)"
+.TP
+.B DB_HOST / DB_PORT / DB_DATABASE / DB_USERNAME / DB_PASSWORD
+Database connection parameters.
+.TP
+.B APP_DEBUG
+Set to
+.B true
+to enable verbose console logging.
+.TP
+.B MULTIFLEXI_DAEMONIZE
+Set to
+.B false
+to run the daemon for a single cycle then exit.
+.TP
+.B MULTIFLEXI_CYCLE_PAUSE
+Seconds the daemon sleeps between polling cycles (default:
+.BR 10 ).
+.TP
+.B MULTIFLEXI_MAX_PARALLEL
+Maximum number of concurrently running job subprocesses.
+.B 0
+means unlimited (default:
+.BR 0 ).
+.TP
+.B MULTIFLEXI_MEMORY_LIMIT_MB
+Soft memory ceiling in megabytes.
+The daemon initiates a graceful shutdown when usage approaches this value.
+.B 0
+disables the check (default:
+.BR 0 ).
+.TP
+.B RESULT_FILE
+Default output destination for one-shot runs (default:
+.IR php://stdout ).
+.SH DAEMON BEHAVIOUR
+When run as a systemd service, the daemon polls the
+.B schedule
+table every
+.B MULTIFLEXI_CYCLE_PAUSE
+seconds.
+For each due job it:
+.IP 1. 3
+Checks whether another job from the same RunTemplate is already running.
+If so, the schedule entry is left untouched and picked up in a later cycle.
+This prevents duplicate side-effects (e.g.\& double bank-statement imports)
+when a long-running job overlaps its next scheduled trigger.
+.IP 2.
+Claims the schedule entry by deleting it, then launches
+.I executor.php
+as an isolated subprocess with its own database connection and memory space.
+.IP 3.
+Waits for all in-flight subprocesses to finish before exiting when it
+receives
+.B SIGTERM
+or
+.B SIGINT
+(requires the
+.B pcntl
+PHP extension).
+.SH EXIT STATUS
+The exit code of a one-shot run mirrors the exit code returned by the job
+process itself.
+.SH FILES
+.TP
+.I /etc/multiflexi/multiflexi.env
+Runtime environment configuration.
+.TP
+.I /usr/share/multiflexi-executor/daemon.php
+Continuous daemon script managed by systemd.
+.TP
+.I /usr/share/multiflexi-executor/executor.php
+One-shot execution script called by this binary.
+.SH SEE ALSO
+.BR multiflexi-run-template (1),
+.BR multiflexi-scheduler (8)
+.SH AUTHOR
+Vítězslav Dvořák <info@vitexsoftware.cz>
