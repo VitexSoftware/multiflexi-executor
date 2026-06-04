@@ -1,8 +1,15 @@
-multiflexi-executor (1.15.1) UNRELEASED; urgency=low
+multiflexi-executor (1.16.0) unstable; urgency=medium
 
+  * executor -r now queues the RunTemplate job for "now" and waits for the
+    daemon to run it, then reproduces the job's stdout, stderr and exit code
+    (instead of running the job inline). The daemon must be running.
+  * Add -t/--timeout option and RUNTEMPLATE_WAIT_TIMEOUT (default 300s, 0 =
+    wait forever); exit 124 when the daemon does not finish the job in time.
+  * Add RUNTEMPLATE_WAIT_POLL to tune the completion poll interval.
+  * Add tests/run-template-wait.sh integration test for both paths.
   * Add man pages: multiflexi-executor(8) and multiflexi-run-template(1)
 
- -- vitex <info@vitexsoftware.cz>  Tue, 03 Jun 2026 08:00:00 +0200
+ -- vitex <info@vitexsoftware.cz>  Wed, 04 Jun 2026 08:00:00 +0200
 
 multiflexi-executor (1.15.0) unstable; urgency=medium
 

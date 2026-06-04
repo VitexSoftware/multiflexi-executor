@@ -1,4 +1,4 @@
-.TH MULTIFLEXI\-RUN\-TEMPLATE 1 "June 2026" "multiflexi-executor 1.15.0" "MultiFlexi"
+.TH MULTIFLEXI\-RUN\-TEMPLATE 1 "June 2026" "multiflexi-executor 1.16.0" "MultiFlexi"
 .SH NAME
 multiflexi\-run\-template \- run a MultiFlexi RunTemplate immediately
 .SH SYNOPSIS
@@ -7,6 +7,8 @@ multiflexi\-run\-template \- run a MultiFlexi RunTemplate immediately
 .I RUNTEMPLATE_ID
 .RB [ \-o
 .IR OUTPUT_FILE ]
+.RB [ \-t
+.IR SECONDS ]
 .RB [ \-e
 .IR ENV_FILE ]
 .SH DESCRIPTION
@@ -14,9 +16,18 @@ multiflexi\-run\-template \- run a MultiFlexi RunTemplate immediately
 is a convenience alias for
 .B multiflexi\-executor \-r
 .IR RUNTEMPLATE_ID .
-It creates a transient job record from the specified RunTemplate and
-executes it synchronously, writing output to stdout (or
-.IR OUTPUT_FILE ).
+It creates a job record from the specified RunTemplate, queues it for
+immediate execution and then blocks until the
+.BR multiflexi-executor (8)
+daemon has run it. Once the job finishes, its captured standard output is
+written to stdout (or
+.IR OUTPUT_FILE ),
+its standard error is forwarded to stderr, and the command exits with the
+job's own exit code.
+.PP
+The executor daemon must be running for the queued job to be picked up; if it
+is not, the command waits until the timeout elapses (see
+.BR \-t ).
 .SH OPTIONS
 .TP
 .BI \-r " RUNTEMPLATE_ID" ", \-\-runtemplate=" RUNTEMPLATE_ID
@@ -28,6 +39,13 @@ Redirect captured output to
 .I FILE
 (default: stdout or
 .BR RESULT_FILE ).
+.TP
+.BI \-t " SECONDS" ", \-\-timeout=" SECONDS
+Maximum time to wait for the daemon to execute the queued job.
+.B 0
+waits indefinitely
+(default: 300, or
+.BR RUNTEMPLATE_WAIT_TIMEOUT ).
 .TP
 .BI \-e " FILE" ", \-\-environment=" FILE
 Path to the
@@ -41,6 +59,9 @@ See
 for the full list of recognised environment variables.
 .SH EXIT STATUS
 Mirrors the exit code of the executed job process.
+Exits
+.B 124
+if the timeout elapses before the daemon completes the job.
 .SH SEE ALSO
 .BR multiflexi-executor (8),
 .BR multiflexi-scheduler (8)

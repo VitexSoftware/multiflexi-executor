@@ -40,6 +40,8 @@ Common keys:
 | `MULTIFLEXI_MAX_PARALLEL` | `0` | Max concurrent jobs; `0` = unlimited |
 | `MULTIFLEXI_MEMORY_LIMIT_MB` | `0` | Soft memory limit in MB (`0` = disabled) |
 | `RESULT_FILE` | `php://stdout` | Default output destination for one-shot runs |
+| `RUNTEMPLATE_WAIT_TIMEOUT` | `300` | Seconds `-r` waits for the daemon to finish a queued job (`0` = forever) |
+| `RUNTEMPLATE_WAIT_POLL` | `2` | Seconds between DB polls while `-r` waits for completion |
 | `ZABBIX_SERVER` / `ZABBIX_HOST` | — | Enable `LogToZabbix` when both are set |
 
 Notes:
@@ -50,11 +52,16 @@ Notes:
 ### One-shot execution (run a single RunTemplate)
 From repo root:
 ```
-cd src && php -q -f executor.php -- -r <RUNTEMPLATE_ID> [-o <output_path>] [-e <env_file>]
+cd src && php -q -f executor.php -- -r <RUNTEMPLATE_ID> [-o <output_path>] [-t <seconds>] [-e <env_file>]
 ```
+This **queues** a new job for the given RunTemplate to run *now* and then blocks until the executor daemon has finished it. Once done, the job's captured stdout is written to the output destination, its stderr is forwarded to stderr, and the command exits with the job's own exit code.
+
+> The executor daemon must be running for the queued job to be picked up. If it is not, the command waits until the timeout elapses and exits `124`.
+
 Flags:
-- -r, --runtemplate: RunTemplate ID to execute
+- -r, --runtemplate: RunTemplate ID to schedule and wait for
 - -o, --output: destination for captured output (defaults to stdout or RESULT_FILE)
+- -t, --timeout: max seconds to wait for the daemon to run the job; `0` waits forever (default: 300, or RUNTEMPLATE_WAIT_TIMEOUT)
 - -e, --environment: path to .env (defaults to ../.env)
 
 ### Daemon (polls DB and executes due jobs)

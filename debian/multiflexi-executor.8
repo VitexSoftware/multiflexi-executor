@@ -1,4 +1,4 @@
-.TH MULTIFLEXI\-EXECUTOR 8 "June 2026" "multiflexi-executor 1.15.0" "MultiFlexi"
+.TH MULTIFLEXI\-EXECUTOR 8 "June 2026" "multiflexi-executor 1.16.0" "MultiFlexi"
 .SH NAME
 multiflexi\-executor \- execute a MultiFlexi job or run a RunTemplate
 .SH SYNOPSIS
@@ -13,15 +13,19 @@ multiflexi\-executor \- execute a MultiFlexi job or run a RunTemplate
 .B multiflexi\-executor
 .B \-r
 .I RUNTEMPLATE_ID
+.RB [ \-t
+.IR SECONDS ]
 .RB [ \-e
 .IR ENV_FILE ]
 .RB [ \-o
 .IR OUTPUT_FILE ]
 .SH DESCRIPTION
 .B multiflexi\-executor
-runs a single MultiFlexi job either by referencing an existing job record
-.RB ( \-j )
-or by creating a new one on-the-fly from a RunTemplate
+runs a single MultiFlexi job either by executing an existing job record
+inline
+.RB ( \-j ),
+or by creating a new job from a RunTemplate, queueing it for immediate
+execution and waiting for the daemon to run it
 .RB ( \-r ).
 .PP
 It is designed for one-shot execution.
@@ -34,10 +38,26 @@ in the background.
 .SH OPTIONS
 .TP
 .BI \-j " JOB_ID" ", \-\-job=" JOB_ID
-Execute an existing job identified by its numeric database ID.
+Execute an existing job identified by its numeric database ID, inline.
+This is the path the daemon uses to launch each due job.
 .TP
 .BI \-r " RUNTEMPLATE_ID" ", \-\-runtemplate=" RUNTEMPLATE_ID
-Create a new job from the given RunTemplate and execute it immediately.
+Create a new job from the given RunTemplate, queue it for immediate
+execution and block until the daemon has run it. The job's standard
+output, standard error and exit code are then reproduced by this command.
+The daemon must be running for the job to be picked up.
+.TP
+.BI \-t " SECONDS" ", \-\-timeout=" SECONDS
+With
+.BR \-r ,
+maximum time to wait for the daemon to execute the queued job.
+.B 0
+waits indefinitely.
+Defaults to the value of
+.B RUNTEMPLATE_WAIT_TIMEOUT
+or
+.BR 300 .
+On timeout the command exits 124.
 .TP
 .BI \-o " FILE" ", \-\-output=" FILE
 Write captured job output to
@@ -94,6 +114,22 @@ disables the check (default:
 .B RESULT_FILE
 Default output destination for one-shot runs (default:
 .IR php://stdout ).
+.TP
+.B RUNTEMPLATE_WAIT_TIMEOUT
+Default timeout, in seconds, for
+.B \-r
+to wait for the daemon to finish the queued job.
+.B 0
+waits indefinitely (default:
+.BR 300 ).
+Overridden by
+.BR \-t .
+.TP
+.B RUNTEMPLATE_WAIT_POLL
+Interval, in seconds, between database polls while
+.B \-r
+waits for completion (default:
+.BR 2 ).
 .SH DAEMON BEHAVIOUR
 When run as a systemd service, the daemon polls the
 .B schedule
@@ -122,6 +158,11 @@ PHP extension).
 .SH EXIT STATUS
 The exit code of a one-shot run mirrors the exit code returned by the job
 process itself.
+With
+.BR \-r ,
+the command exits
+.B 124
+if the timeout elapses before the daemon completes the job.
 .SH FILES
 .TP
 .I /etc/multiflexi/multiflexi.env
