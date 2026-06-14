@@ -11,6 +11,11 @@ multiflexi\-run\-template \- run a MultiFlexi RunTemplate immediately
 .IR SECONDS ]
 .RB [ \-e
 .IR ENV_FILE ]
+.RB [ \-E
+.IR KEY=VALUE ]
+\&...
+.RB [ \-\-env\-json=
+.IR JSON ]
 .SH DESCRIPTION
 .B multiflexi\-run\-template
 is a convenience alias for
@@ -53,6 +58,24 @@ Path to the
 configuration file
 (default:
 .IR ../.env ).
+.TP
+.BI \-E " KEY=VALUE"
+Inject an environment variable override into the job.
+The flag is repeatable; each occurrence adds or replaces one variable.
+When both
+.B \-E
+and
+.B \-\-env\-json
+supply the same key,
+.B \-E
+wins.
+.B Values are never written to logs.
+.TP
+.BI \-\-env\-json= JSON
+Inject environment variable overrides from a JSON object string.
+.I JSON
+must be a valid JSON object; the command exits 1 on parse error.
+.B Values are never written to logs.
 .SH ENVIRONMENT
 See
 .BR multiflexi-executor (8)
@@ -62,6 +85,22 @@ Mirrors the exit code of the executed job process.
 Exits
 .B 124
 if the timeout elapses before the daemon completes the job.
+.SH EXAMPLES
+Run RunTemplate 42 with a single env override:
+.PP
+.RS
+.EX
+multiflexi\-run\-template \-r 42 \-E INPUT_FILE=/tmp/data.json
+.EE
+.RE
+.PP
+Pass multiple overrides as JSON:
+.PP
+.RS
+.EX
+multiflexi\-run\-template \-r 42 \-\-env\-json='{"INPUT_FILE":"/tmp/data.json","MIN_AMOUNT":"100"}'
+.EE
+.RE
 .SH SEE ALSO
 .BR multiflexi-executor (8),
 .BR multiflexi-scheduler (8)

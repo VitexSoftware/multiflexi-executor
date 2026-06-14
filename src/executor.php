@@ -19,7 +19,7 @@ use Ease\Shared;
 
 require_once '../vendor/autoload.php';
 
-$options = getopt('r:j:o::e::t::', ['runtemplate::', 'job::', 'output::', 'environment::', 'timeout::']);
+$options = getopt('r:j:o::e::t::E:', ['runtemplate::', 'job::', 'output::', 'environment::', 'timeout::', 'env-json:']);
 Shared::init(
     ['DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD'],
     \array_key_exists('environment', $options) ? $options['environment'] : (\array_key_exists('e', $options) ? $options['e'] : '../.env'),
@@ -32,6 +32,58 @@ $jobId = (int) (\array_key_exists('j', $options) ? $options['j'] : (\array_key_e
 // Maximum seconds to wait for the daemon to execute a queued RunTemplate job.
 // 0 means wait indefinitely. Configurable via RUNTEMPLATE_WAIT_TIMEOUT.
 $waitTimeout = (int) (\array_key_exists('t', $options) ? $options['t'] : (\array_key_exists('timeout', $options) ? $options['timeout'] : Shared::cfg('RUNTEMPLATE_WAIT_TIMEOUT', 300)));
+
+// Build env-override ConfigFields from -E KEY=VALUE and/or --env-json='{"KEY":"VAL"}'.
+// -E entries take precedence over --env-json keys when both are given.
+// Values are never logged; only key names are emitted at debug level.
+$override = new ConfigFields('cli-override');
+
+if (\array_key_exists('env-json', $options)) {
+    $rawJson = (string) $options['env-json'];
+    $decoded = json_decode($rawJson, true);
+
+    if (!\is_array($decoded)) {
+        fwrite(fopen('php://stderr', 'wb'), '--env-json: invalid JSON — '.json_last_error_msg().\PHP_EOL);
+
+        exit(1);
+    }
+
+    foreach ($decoded as $envKey => $envVal) {
+        $field = new ConfigField((string) $envKey, 'string', '', '', '', (string) $envVal);
+        $field->setSource('cli');
+        $override->addField($field);
+
+        if (Shared::cfg('APP_DEBUG')) {
+            // Log key name only — never the value.
+            fwrite(fopen('php://stderr', 'wb'), '[debug] env-override key (from --env-json): '.$envKey.\PHP_EOL);
+        }
+    }
+}
+
+// -E entries are collected as an array (flag is repeatable); each must be "KEY=VALUE".
+// These override any same-named keys already added from --env-json.
+$eEntries = \array_key_exists('E', $options) ? (array) $options['E'] : [];
+
+foreach ($eEntries as $entry) {
+    $eqPos = strpos((string) $entry, '=');
+
+    if ($eqPos === false || $eqPos === 0) {
+        fwrite(fopen('php://stderr', 'wb'), '-E: expected KEY=VALUE, got: '.((string) $entry).\PHP_EOL);
+
+        exit(1);
+    }
+
+    $envKey = substr((string) $entry, 0, $eqPos);
+    $envVal = substr((string) $entry, $eqPos + 1);
+    $field = new ConfigField($envKey, 'string', '', '', '', $envVal);
+    $field->setSource('cli');
+    $override->addField($field); // addField replaces any existing field with the same code
+
+    if (Shared::cfg('APP_DEBUG')) {
+        // Log key name only — never the value.
+        fwrite(fopen('php://stderr', 'wb'), '[debug] env-override key (from -E): '.$envKey.\PHP_EOL);
+    }
+}
 
 $loggers = ['syslog', '\MultiFlexi\LogToSQL'];
 
@@ -95,8 +147,9 @@ if ($runtempateId > 0) {
     // Create the job and queue it for immediate execution. prepareJob() already
     // schedules the run via scheduleJobRun(); the running daemon picks it up so
     // it goes through the regular parallelism / per-runtemplate guards.
+    // Any env overrides supplied via -E or --env-json are forwarded to the job.
     $jobber = new Job();
-    $jobber->prepareJob($runTemplater, new ConfigFields('empty'), new \DateTime(), 'Native', 'adhoc');
+    $jobber->prepareJob($runTemplater, $override, new \DateTime(), 'Native', 'adhoc');
     $jobId = $jobber->getMyKey();
 
     // Wait for the daemon to finish the job. Completion is signalled by the
@@ -138,6 +191,27 @@ if ($runtempateId > 0) {
     exit((int) $check->getDataValue('exitcode'));
 }
 
-fwrite(fopen('php://stderr', 'wb'), 'Specify either runtemplate ID (-r) or job ID (-j) to run'.\PHP_EOL);
+fwrite(fopen('php://stderr', 'wb'), <<<'USAGE'
+Usage:
+  multiflexi-executor -j JOB_ID [-e ENV_FILE] [-o OUTPUT_FILE]
+  multiflexi-executor -r RUNTEMPLATE_ID [-t SECONDS] [-e ENV_FILE] [-o OUTPUT_FILE]
+                      [-E KEY=VALUE ...] [--env-json='{"KEY":"VAL"}']
+
+Options:
+  -j, --job=JOB_ID          Execute an existing job by its database ID (inline).
+  -r, --runtemplate=ID      Create and queue a new job from a RunTemplate, then
+                            wait for the daemon to run it.
+  -t, --timeout=SECONDS     Max seconds to wait for -r mode (0 = unlimited,
+                            default: RUNTEMPLATE_WAIT_TIMEOUT or 300).
+  -o, --output=FILE         Write captured job stdout to FILE (default: php://stdout
+                            or RESULT_FILE).
+  -e, --environment=FILE    Path to the .env configuration file (default: ../.env).
+  -E KEY=VALUE              Inject an env override into the job (repeatable).
+                            Takes precedence over --env-json for the same key.
+  --env-json='{"K":"V"}'    Inject env overrides from a JSON object string.
+                            Must be valid JSON; exits 1 on parse error.
+
+USAGE
+);
 
 exit(1);

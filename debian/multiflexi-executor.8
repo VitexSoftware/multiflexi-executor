@@ -19,6 +19,11 @@ multiflexi\-executor \- execute a MultiFlexi job or run a RunTemplate
 .IR ENV_FILE ]
 .RB [ \-o
 .IR OUTPUT_FILE ]
+.RB [ \-E
+.IR KEY=VALUE ]
+\&...
+.RB [ \-\-env\-json=
+.IR JSON ]
 .SH DESCRIPTION
 .B multiflexi\-executor
 runs a single MultiFlexi job either by executing an existing job record
@@ -75,6 +80,32 @@ configuration file.
 Defaults to
 .I ../.env
 relative to the script.
+.TP
+.BI \-E " KEY=VALUE"
+Inject an environment variable override into the job (only effective with
+.BR \-r ).
+The flag is repeatable; each occurrence adds or replaces one variable.
+When both
+.B \-E
+and
+.B \-\-env\-json
+supply the same key,
+.B \-E
+wins.
+.B Values are never written to logs;
+only key names appear at debug level.
+.TP
+.BI \-\-env\-json= JSON
+Inject environment variable overrides from a JSON object string (only
+effective with
+.BR \-r ).
+.I JSON
+must be a valid JSON object
+.RB ( { "KEY":"VALUE",\~ ... } );
+the command exits 1 with an error message if parsing fails.
+Individual keys can be overridden by
+.BR \-E .
+.B Values are never written to logs.
 .SH ENVIRONMENT
 .TP
 .B DB_CONNECTION
@@ -163,6 +194,30 @@ With
 the command exits
 .B 124
 if the timeout elapses before the daemon completes the job.
+.SH EXAMPLES
+Run RunTemplate 7 with two env overrides:
+.PP
+.RS
+.EX
+multiflexi\-executor \-r 7 \-E FOO=bar \-E BAZ=qux
+.EE
+.RE
+.PP
+Run RunTemplate 7 passing overrides as JSON:
+.PP
+.RS
+.EX
+multiflexi\-executor \-r 7 \-\-env\-json='{"FOO":"bar","BAZ":"qux"}'
+.EE
+.RE
+.PP
+Combine both (FOO from \-E overrides the JSON value):
+.PP
+.RS
+.EX
+multiflexi\-executor \-r 7 \-\-env\-json='{"FOO":"old","BAZ":"qux"}' \-E FOO=new
+.EE
+.RE
 .SH FILES
 .TP
 .I /etc/multiflexi/multiflexi.env
