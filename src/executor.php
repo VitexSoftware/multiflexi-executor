@@ -118,6 +118,60 @@ if ($jobId > 0) {
         $jobber->addStatusMessage(sprintf('Executing existing job #%d', $jobId));
     }
 
+    // Phase 2 credential availability gate: check each assigned credential
+    // before allowing the job to run. Unknown state (no check implemented) never blocks.
+    /** @var array<string,\MultiFlexi\CredentialCheckResult> $availabilityCache */
+    static $availabilityCache = [];
+
+    $runTemplate = $jobber->getRuntemplate();
+
+    if ($runTemplate !== null) {
+        foreach ($runTemplate->getCredentialsAssigned() as $credentialData) {
+            if (empty($credentialData['credentials_id'])) {
+                continue;
+            }
+
+            $credId = (int) $credentialData['credentials_id'];
+            $cacheKey = (string) $credId;
+
+            if (!isset($availabilityCache[$cacheKey])) {
+                $cred = new \MultiFlexi\Credential($credId);
+
+                if ($cred->getMyKey()) {
+                    $prototype = $cred->getCredentialType()?->getPrototype();
+
+                    if ($prototype instanceof \MultiFlexi\checkableCredentialInterface) {
+                        $availabilityCache[$cacheKey] = $prototype->checkAvailability();
+                    }
+                }
+            }
+
+            if (isset($availabilityCache[$cacheKey])) {
+                $checkResult = $availabilityCache[$cacheKey];
+
+                if (!$checkResult->isSatisfied()) {
+                    $credName = $credentialData['credential_name'] ?? ('credential #'.$credId);
+
+                    // Report to SQL log, Zabbix, and OTel.
+                    $jobber->reportCredentialBlocked($checkResult, $credName);
+
+                    if ($checkResult->state === \MultiFlexi\CredentialState::Unavailable
+                        || $checkResult->state === \MultiFlexi\CredentialState::Degraded) {
+                        // Transient: re-queue for retry after the TTL period.
+                        $retryAfter = $checkResult->ttl > 0 ? $checkResult->ttl : 60;
+                        $retryAt = new \DateTime();
+                        $retryAt->modify(sprintf('+%d seconds', $retryAfter));
+                        $scheduler = new \MultiFlexi\Scheduler();
+                        $scheduler->addJob($jobber, $retryAt);
+                        $jobber->addStatusMessage(sprintf(_('Retry scheduled at %s'), $retryAt->format('Y-m-d H:i:s')), 'info');
+                    }
+
+                    exit(75); // EX_TEMPFAIL — transient or permanent unavailability
+                }
+            }
+        }
+    }
+
     $jobber->performJob();
 
     echo $jobber->executor->getOutput();

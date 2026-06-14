@@ -1,3 +1,13 @@
+multiflexi-executor (1.18.0) UNRELEASED; urgency=medium
+
+  * Add Phase 2 credential availability gate before performJob(): checks each
+    assigned credential via checkAvailability(), defers with retry for
+    Unavailable/Degraded, blocks for Misconfigured; exits EX_TEMPFAIL (75)
+  * Reports blocked jobs to SQL log, Zabbix, and OpenTelemetry via
+    Job::reportCredentialBlocked()
+
+ -- vitex <info@vitexsoftware.cz>  Sat, 14 Jun 2026 12:00:00 +0200
+
 multiflexi-executor (1.17.0) unstable; urgency=medium
 
   * feat: -E and --env-json flags allow env overrides when scheduling via -r
