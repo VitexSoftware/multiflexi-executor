@@ -1,3 +1,9 @@
+multiflexi-executor (1.17.0) unstable; urgency=medium
+
+  * feat: -E and --env-json flags allow env overrides when scheduling via -r
+
+ -- vitex <info@vitexsoftware.cz>  Sat, 14 Jun 2026 08:00:00 +0200
+
 multiflexi-executor (1.16.0) unstable; urgency=medium
 
   * executor -r now queues the RunTemplate job for "now" and waits for the
