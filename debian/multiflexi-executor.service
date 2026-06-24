@@ -1,10 +1,9 @@
-#!/bin/sh
-# If this exists, it is installed into lib/systemd/system/multiflexi.service in multiflexi
-# See dh_systemd_enable(1).
-
 [Unit]
-Description=Run MultiFlexi scheduled jobs
-After=multi-user.target
+Description=MultiFlexi Executor
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=120s
+StartLimitBurst=5
 
 [Service]
 User=multiflexi
