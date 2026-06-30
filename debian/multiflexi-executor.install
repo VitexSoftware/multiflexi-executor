@@ -2,7 +2,7 @@ bin/*                   usr/bin/
 src/*.php		usr/share/multiflexi-executor
 src/MultiFlexi/DaemonHelper.php	usr/share/multiflexi-executor/MultiFlexi/
 composer.json		usr/share/php/MultiFlexi/Executor/
-debian/autoload.php	usr/share/php/MultiFlexi/Executor/
+debian/autoload.php	usr/share/multiflexi-executor/
 debian/99-multiflexi-executor.ini	etc/php/8.3/cli/conf.d/
 multiflexi-executor.svg	usr/share/icons/hicolor/scalable/apps/
 debian/cz.vitexsoftware.multiflexi_executor.metainfo.xml	usr/share/metainfo/
