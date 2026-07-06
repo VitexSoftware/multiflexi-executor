@@ -19,7 +19,7 @@ use Ease\Shared;
 
 require_once '../vendor/autoload.php';
 
-$options = getopt('r:j:o::e::t::E:', ['runtemplate::', 'job::', 'output::', 'environment::', 'timeout::', 'env-json:']);
+$options = getopt('r:j:o::e::t:E:', ['runtemplate::', 'job::', 'output::', 'environment::', 'timeout:', 'env-json:']);
 Shared::init(
     ['DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD'],
     \array_key_exists('environment', $options) ? $options['environment'] : (\array_key_exists('e', $options) ? $options['e'] : '../.env'),

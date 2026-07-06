@@ -5,6 +5,14 @@ multiflexi-executor (1.18.0) UNRELEASED; urgency=medium
     Unavailable/Degraded, blocks for Misconfigured; exits EX_TEMPFAIL (75)
   * Reports blocked jobs to SQL log, Zabbix, and OpenTelemetry via
     Job::reportCredentialBlocked()
+  * fix: -t/--timeout was declared as a getopt optional-value option, so
+    space-separated invocations like "-t 180" silently failed to parse and
+    fell back to an unlimited wait (0). Changed to a required-value option
+    so "-t 180" and "--timeout 180" are parsed correctly. Executor processes
+    started with the old binary and no timeout could hang indefinitely
+    waiting for a job that will never finish (e.g. after its Job row was
+    cleaned up by `multiflexi queue:fix`); such stale processes must be
+    killed manually after upgrading.
 
  -- vitex <info@vitexsoftware.cz>  Sat, 14 Jun 2026 12:00:00 +0200
 
