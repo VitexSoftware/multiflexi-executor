@@ -1,4 +1,8 @@
 # multiflexi-executor
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Packaging: deb](https://img.shields.io/badge/packaging-.deb-red?logo=debian&logoColor=white)
+
 Execute MultiFlexi jobs (one-shot or as a long-running daemon).
 
 ![Executor Logo](multiflexi-executor.svg?raw=true)
