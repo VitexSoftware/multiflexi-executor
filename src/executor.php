@@ -157,13 +157,37 @@ if ($jobId > 0) {
 
                     if ($checkResult->state === \MultiFlexi\CredentialState::Unavailable
                         || $checkResult->state === \MultiFlexi\CredentialState::Degraded) {
-                        // Transient: re-queue for retry after the TTL period.
-                        $retryAfter = $checkResult->ttl > 0 ? $checkResult->ttl : 60;
-                        $retryAt = new \DateTime();
-                        $retryAt->modify(sprintf('+%d seconds', $retryAfter));
-                        $scheduler = new \MultiFlexi\Scheduler();
-                        $scheduler->addJob($jobber, $retryAt);
-                        $jobber->addStatusMessage(sprintf(_('Retry scheduled at %s'), $retryAt->format('Y-m-d H:i:s')), 'info');
+                        $taskId = (int) $jobber->getDataValue('task_id');
+                        $task = $taskId > 0 ? new \MultiFlexi\Task($taskId) : null;
+
+                        if ($task !== null) {
+                            // Count this blocked attempt against the same retry
+                            // budget/deadline a normal job failure would use, so a
+                            // permanently unavailable credential can't re-queue the
+                            // same task forever — it exhausts max_attempts or the
+                            // window deadline just like Job::updateTaskState() does.
+                            $task->incrementAttempts();
+                            $retryAt = $task->getNextRetryTime();
+
+                            if ($retryAt !== null) {
+                                $scheduler = new \MultiFlexi\Scheduler();
+                                $scheduler->addJob($jobber, $retryAt);
+                                $jobber->addStatusMessage(sprintf(_('Retry scheduled at %s'), $retryAt->format('Y-m-d H:i:s')), 'info');
+                            } else {
+                                $task->markFailed();
+                                $jobber->addStatusMessage(_('Retry budget exhausted or window expired; task marked failed'), 'warning');
+                            }
+                        } else {
+                            // No Task tracking for this job (e.g. custom-cron
+                            // RunTemplates have no fixed window to anchor a Task
+                            // to): fall back to a flat TTL-based retry.
+                            $retryAfter = $checkResult->ttl > 0 ? $checkResult->ttl : 60;
+                            $retryAt = new \DateTime();
+                            $retryAt->modify(sprintf('+%d seconds', $retryAfter));
+                            $scheduler = new \MultiFlexi\Scheduler();
+                            $scheduler->addJob($jobber, $retryAt);
+                            $jobber->addStatusMessage(sprintf(_('Retry scheduled at %s'), $retryAt->format('Y-m-d H:i:s')), 'info');
+                        }
                     }
 
                     exit(75); // EX_TEMPFAIL — transient or permanent unavailability
