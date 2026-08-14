@@ -869,12 +869,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core.git",
-                "reference": "429eea36ad4a233d95aba5b1868a3c0316e9b663"
+                "reference": "c132f503c62cf181f3fd94ea87a1f0955d9f2cd8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/VitexSoftware/php-vitexsoftware-multiflexi-core/zipball/429eea36ad4a233d95aba5b1868a3c0316e9b663",
-                "reference": "429eea36ad4a233d95aba5b1868a3c0316e9b663",
+                "url": "https://api.github.com/repos/VitexSoftware/php-vitexsoftware-multiflexi-core/zipball/c132f503c62cf181f3fd94ea87a1f0955d9f2cd8",
+                "reference": "c132f503c62cf181f3fd94ea87a1f0955d9f2cd8",
                 "shasum": ""
             },
             "require": {
@@ -921,7 +921,7 @@
                 "issues": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core/issues",
                 "source": "https://github.com/VitexSoftware/php-vitexsoftware-multiflexi-core/tree/main"
             },
-            "time": "2026-06-19T05:31:41+00:00"
+            "time": "2026-08-14T15:43:13+00:00"
         }
     ],
     "packages-dev": [
