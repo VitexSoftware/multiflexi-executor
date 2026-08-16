@@ -6,9 +6,13 @@
   <project_license>MIT</project_license>
   <name>multiflexi-executor</name>
   <summary>execute MultiFlexi jobs</summary>
+  <summary xml:lang="cs">Spouští úlohy MultiFlexi</summary>
   <description>
     <p>
       Execute once scheduled job in MultiFlexi and store its result. Run MultiFlexi tasks in Docker container
+    </p>
+    <p xml:lang="cs">
+      Spustí jednou naplánovanou úlohu v MultiFlexi a uloží její výsledek. Spouští úlohy MultiFlexi v kontejneru Docker.
     </p>
   </description>
   <categories>
