@@ -175,6 +175,7 @@ if ($jobId > 0) {
                                 $jobber->addStatusMessage(sprintf(_('Retry scheduled at %s'), $retryAt->format('Y-m-d H:i:s')), 'info');
                             } else {
                                 $task->markFailed();
+                                $jobber->markUnexecuted(75);
                                 $jobber->addStatusMessage(_('Retry budget exhausted or window expired; task marked failed'), 'warning');
                             }
                         } else {
@@ -188,6 +189,13 @@ if ($jobId > 0) {
                             $scheduler->addJob($jobber, $retryAt);
                             $jobber->addStatusMessage(sprintf(_('Retry scheduled at %s'), $retryAt->format('Y-m-d H:i:s')), 'info');
                         }
+                    } else {
+                        // States that never reach the retry logic above (e.g.
+                        // Misconfigured) still exit(75) below — finalize the job
+                        // row here too, or it stays exitcode=NULL forever and
+                        // Scheduler::initializeScheduling() never resets
+                        // next_schedule for this run-template.
+                        $jobber->markUnexecuted(75);
                     }
 
                     exit(75); // EX_TEMPFAIL — transient or permanent unavailability
