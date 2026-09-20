@@ -16,26 +16,18 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 
 /**
- * Tests for the Kubernetes executor's kubernetesConfig() derivation logic.
- *
- * These tests validate that the executor correctly reconstructs k8s config
- * from existing DB fields (helmchart, name, artifacts) without needing
- * a dedicated kubernetes JSON column.
+ * Tests for the Kubernetes executor.
  */
 class KubernetesConfigTest extends TestCase
 {
-    /**
-     * Test that kubernetesConfig returns empty array when no helmchart is set.
-     */
-    public function testKubernetesConfigEmptyWhenNoHelmChart(): void
+    public function testKubernetesConfigEmptyHelmWhenNoHelmChart(): void
     {
         $config = $this->invokeKubernetesConfig('', 'TestApp', '');
-        $this->assertSame([], $config);
+        $this->assertArrayNotHasKey('helm', $config);
+        $this->assertFalse($config['artifacts']['enabled']);
+        $this->assertSame([], $config['artifacts']['paths']);
     }
 
-    /**
-     * Test that kubernetesConfig returns valid helm config when helmchart is set.
-     */
     public function testKubernetesConfigWithHelmChart(): void
     {
         $config = $this->invokeKubernetesConfig(
@@ -55,9 +47,6 @@ class KubernetesConfigTest extends TestCase
         $this->assertSame(300, $config['helm']['timeoutSeconds']);
     }
 
-    /**
-     * Test that releaseName is derived as DNS-1123 safe from app name.
-     */
     public function testReleaseNameDnsSafe(): void
     {
         $config = $this->invokeKubernetesConfig(
@@ -69,26 +58,27 @@ class KubernetesConfigTest extends TestCase
         $this->assertSame('multiflexi-probe-v2-0', $config['helm']['releaseName']);
     }
 
-    /**
-     * Test that artifact config is derived from comma-separated paths.
-     */
-    public function testArtifactConfigFromPaths(): void
+    public function testReleaseNameTruncatedTo63Chars(): void
+    {
+        $long = str_repeat('a', 80);
+        $config = $this->invokeKubernetesConfig('oci://example/chart', $long, '');
+        $this->assertSame(63, \strlen($config['helm']['releaseName']));
+        $this->assertSame(str_repeat('a', 63), $config['helm']['releaseName']);
+    }
+
+    public function testArtifactConfigStoresAllPaths(): void
     {
         $config = $this->invokeKubernetesConfig(
             'oci://example/chart',
             'App',
-            'report.json,output.csv',
+            'report.json,output.csv, /tmp/extra.log ',
         );
 
-        $this->assertArrayHasKey('artifacts', $config);
         $this->assertTrue($config['artifacts']['enabled']);
-        $this->assertSame('report.json', $config['artifacts']['outputPath']);
+        $this->assertSame(['report.json', 'output.csv', '/tmp/extra.log'], $config['artifacts']['paths']);
         $this->assertFalse($config['artifacts']['keepPodOnFailure']);
     }
 
-    /**
-     * Test that artifacts are disabled when no artifact paths exist.
-     */
     public function testArtifactsDisabledWhenEmpty(): void
     {
         $config = $this->invokeKubernetesConfig(
@@ -98,12 +88,17 @@ class KubernetesConfigTest extends TestCase
         );
 
         $this->assertFalse($config['artifacts']['enabled']);
-        $this->assertSame('', $config['artifacts']['outputPath']);
+        $this->assertSame([], $config['artifacts']['paths']);
     }
 
-    /**
-     * Test that empty app name falls back to 'mf-app'.
-     */
+    public function testArtifactsWithoutHelmChart(): void
+    {
+        $config = $this->invokeKubernetesConfig('', 'App', 'a.json,b.json');
+        $this->assertArrayNotHasKey('helm', $config);
+        $this->assertTrue($config['artifacts']['enabled']);
+        $this->assertSame(['a.json', 'b.json'], $config['artifacts']['paths']);
+    }
+
     public function testFallbackReleaseName(): void
     {
         $config = $this->invokeKubernetesConfig(
@@ -115,9 +110,6 @@ class KubernetesConfigTest extends TestCase
         $this->assertSame('mf-app', $config['helm']['releaseName']);
     }
 
-    /**
-     * Test static method usableForApp returns true when ociimage is set.
-     */
     public function testUsableForAppWithImage(): void
     {
         $app = $this->createMock(\MultiFlexi\Application::class);
@@ -125,13 +117,9 @@ class KubernetesConfigTest extends TestCase
             ->with('ociimage')
             ->willReturn('docker.io/example/image:latest');
 
-        $result = \MultiFlexi\Executor\Kubernetes::usableForApp($app);
-        $this->assertTrue($result);
+        $this->assertTrue(\MultiFlexi\Executor\Kubernetes::usableForApp($app));
     }
 
-    /**
-     * Test static method usableForApp returns false when ociimage is empty.
-     */
     public function testUsableForAppWithoutImage(): void
     {
         $app = $this->createMock(\MultiFlexi\Application::class);
@@ -139,16 +127,127 @@ class KubernetesConfigTest extends TestCase
             ->with('ociimage')
             ->willReturn('');
 
-        $result = \MultiFlexi\Executor\Kubernetes::usableForApp($app);
-        $this->assertFalse($result);
+        $this->assertFalse(\MultiFlexi\Executor\Kubernetes::usableForApp($app));
+    }
+
+    public function testNameDescriptionLogo(): void
+    {
+        $this->assertNotEmpty(\MultiFlexi\Executor\Kubernetes::name());
+        $this->assertNotEmpty(\MultiFlexi\Executor\Kubernetes::description());
+        $this->assertStringStartsWith('data:image/svg+xml;base64,', \MultiFlexi\Executor\Kubernetes::logo());
+    }
+
+    public function testHelmNamespaceHelper(): void
+    {
+        $method = new \ReflectionMethod(\MultiFlexi\Executor\Kubernetes::class, 'helmNamespace');
+        $method->setAccessible(true);
+
+        $this->assertSame('multiflexi', $method->invoke(null, ['namespace' => 'multiflexi']));
+        $this->assertNull($method->invoke(null, []));
+        $this->assertNull($method->invoke(null, ['namespace' => '']));
+    }
+
+    public function testShouldRunHelmHelper(): void
+    {
+        $method = new \ReflectionMethod(\MultiFlexi\Executor\Kubernetes::class, 'shouldRunHelm');
+        $method->setAccessible(true);
+
+        $this->assertTrue($method->invoke(null, ['enabled' => true]));
+        $this->assertFalse($method->invoke(null, []));
+        $this->assertFalse($method->invoke(null, ['enabled' => false]));
+    }
+
+    public function testHelmSetValueHelper(): void
+    {
+        $method = new \ReflectionMethod(\MultiFlexi\Executor\Kubernetes::class, 'helmSetValue');
+        $method->setAccessible(true);
+
+        $this->assertSame('true', $method->invoke(null, true));
+        $this->assertSame('false', $method->invoke(null, false));
+        $this->assertSame('42', $method->invoke(null, 42));
+        $this->assertSame('{"a":1}', $method->invoke(null, ['a' => 1]));
+    }
+
+    public function testArtifactPathsBackwardCompatibleOutputPath(): void
+    {
+        $method = new \ReflectionMethod(\MultiFlexi\Executor\Kubernetes::class, 'artifactPaths');
+        $method->setAccessible(true);
+
+        $this->assertSame(['legacy.json'], $method->invoke(null, ['outputPath' => 'legacy.json']));
+        $this->assertSame(['a.json', 'b.json'], $method->invoke(null, ['paths' => ['a.json', 'b.json']]));
+        $this->assertSame([], $method->invoke(null, []));
+    }
+
+    public function testResolveNamespacePrefersEnv(): void
+    {
+        $executor = $this->makeExecutor('oci://chart', 'App', '');
+        putenv('MULTIFLEXI_K8S_NAMESPACE=from-env');
+
+        try {
+            $method = new \ReflectionMethod($executor, 'resolveNamespace');
+            $method->setAccessible(true);
+            $this->assertSame('from-env', $method->invoke($executor, ['namespace' => 'multiflexi']));
+        } finally {
+            putenv('MULTIFLEXI_K8S_NAMESPACE');
+        }
+    }
+
+    public function testResolveNamespaceFallsBackToHelm(): void
+    {
+        $executor = $this->makeExecutor('oci://chart', 'App', '');
+        putenv('MULTIFLEXI_K8S_NAMESPACE');
+
+        $method = new \ReflectionMethod($executor, 'resolveNamespace');
+        $method->setAccessible(true);
+        $this->assertSame('multiflexi', $method->invoke($executor, ['namespace' => 'multiflexi']));
+        $this->assertNull($method->invoke($executor, []));
+    }
+
+    public function testJobOutputSurvivesProcessOverwrite(): void
+    {
+        $executor = $this->makeExecutor('oci://chart', 'App', '');
+        $ref = new \ReflectionClass($executor);
+
+        $stdout = $ref->getProperty('jobStdout');
+        $stdout->setAccessible(true);
+        $stdout->setValue($executor, "job-out\n");
+
+        $stderr = $ref->getProperty('jobStderr');
+        $stderr->setAccessible(true);
+        $stderr->setValue($executor, "job-err\n");
+
+        $exit = $ref->getProperty('jobExitCode');
+        $exit->setAccessible(true);
+        $exit->setValue($executor, 0);
+
+        $this->assertSame("job-out\n", $executor->getOutput());
+        $this->assertSame("job-err\n", $executor->getErrorOutput());
+        $this->assertSame(0, $executor->getExitCode());
+        $this->assertNotEmpty($executor->meaning());
+    }
+
+    public function testCommandlineContainsImageAndRestartNever(): void
+    {
+        $executor = $this->makeExecutor('', 'App', '');
+        $line = $executor->commandline();
+        $this->assertStringContainsString('kubectl', $line);
+        $this->assertStringContainsString('--restart=Never', $line);
+        $this->assertStringContainsString('docker.io/example/image:latest', $line);
     }
 
     /**
-     * Invoke the private kubernetesConfig() method with mocked Application data.
-     *
      * @return array<string, mixed>
      */
     private function invokeKubernetesConfig(string $helmChart, string $appName, string $artifacts): array
+    {
+        $executor = $this->makeExecutor($helmChart, $appName, $artifacts);
+        $method = new \ReflectionMethod($executor, 'kubernetesConfig');
+        $method->setAccessible(true);
+
+        return $method->invoke($executor);
+    }
+
+    private function makeExecutor(string $helmChart, string $appName, string $artifacts): \MultiFlexi\Executor\Kubernetes
     {
         $app = $this->createMock(\MultiFlexi\Application::class);
         $app->method('getDataValue')
@@ -157,6 +256,8 @@ class KubernetesConfigTest extends TestCase
                     'helmchart' => $helmChart,
                     'name' => $appName,
                     'artifacts' => $artifacts,
+                    'ociimage' => 'docker.io/example/image:latest',
+                    'executable' => '/usr/bin/test',
                     default => null,
                 };
             });
@@ -166,11 +267,9 @@ class KubernetesConfigTest extends TestCase
         $job->method('getMyKey')->willReturn(1);
         $job->method('getEnvironment')->willReturn(new \MultiFlexi\ConfigFields('test'));
 
-        // Create a Kubernetes instance via reflection to avoid constructor side effects
         $ref = new \ReflectionClass(\MultiFlexi\Executor\Kubernetes::class);
         $executor = $ref->newInstanceWithoutConstructor();
 
-        // Set required properties
         $jobProp = $ref->getProperty('job');
         $jobProp->setAccessible(true);
         $jobProp->setValue($executor, $job);
@@ -179,10 +278,6 @@ class KubernetesConfigTest extends TestCase
         $envProp->setAccessible(true);
         $envProp->setValue($executor, new \MultiFlexi\ConfigFields('test'));
 
-        // Invoke private method
-        $method = $ref->getMethod('kubernetesConfig');
-        $method->setAccessible(true);
-
-        return $method->invoke($executor);
+        return $executor;
     }
 }

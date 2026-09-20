@@ -1,8 +1,47 @@
 MultiFlexi Executor Kubernetes helper package
+=============================================
 
-This package contains Kubernetes integration helper files for the
-MultiFlexi executor. It depends on `multiflexi-executor` and requires
-`kubectl` (or a compatible Kubernetes client) to be installed on the host.
+This package provides the Kubernetes executor class for MultiFlexi and
+ships a ready-to-apply RBAC manifest for the ``multiflexi`` namespace.
 
-It installs only packaging metadata and does not duplicate the main
-executor files.
+Requirements
+------------
+
+* ``kubectl`` in ``$PATH``
+* ``helm`` (v3+) in ``$PATH`` when applications declare a ``helmchart``
+* A valid kubeconfig readable by the ``multiflexi`` daemon user
+
+RBAC installation
+-----------------
+
+Create the namespace (once)::
+
+  kubectl create namespace multiflexi
+
+Apply the packaged Role / RoleBinding / ServiceAccount::
+
+  kubectl apply -f /usr/share/multiflexi/k8s/multiflexi-executor-rbac.yaml
+
+Generate a kubeconfig for ServiceAccount ``multiflexi-executor`` and install
+it for the daemon user (example for clusters that still support SA secrets)::
+
+  sudo mkdir -p /var/lib/multiflexi/.kube
+  # create a token-based kubeconfig for SA multiflexi-executor, then:
+  sudo install -o multiflexi -g multiflexi -m 0600 ./multiflexi-executor.kubeconfig \
+    /var/lib/multiflexi/.kube/config
+
+Configuration
+-------------
+
+* ``KUBECONFIG`` – path to kubeconfig (default ``~/.kube/config``)
+* ``MULTIFLEXI_K8S_NAMESPACE`` – override the target namespace
+  (otherwise Helm chart namespace ``multiflexi``, or the cluster default)
+
+Application fields used at runtime:
+
+* ``ociimage`` (required) – container image for ``kubectl run``
+* ``helmchart`` (optional) – when set, Helm upgrade --install runs first
+* ``artifacts`` (optional) – comma-separated paths inside the pod; every
+  path is copied with ``kubectl cp`` and stored in the job file store
+
+See https://multiflexi.eu/ for the full Kubernetes integration guide.

@@ -1,0 +1,51 @@
+# MultiFlexi Executor — Kubernetes RBAC
+#
+# Least-privilege Role for one-shot kubectl run jobs and optional Helm
+# pre-deploy in the multiflexi namespace.
+#
+# Apply:
+#   kubectl apply -f /usr/share/multiflexi/k8s/multiflexi-executor-rbac.yaml
+#
+# Then mint a kubeconfig for ServiceAccount multiflexi-executor and place it
+# at /var/lib/multiflexi/.kube/config (owner multiflexi, mode 0600).
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: multiflexi-executor
+  namespace: multiflexi
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: multiflexi-executor-role
+  namespace: multiflexi
+rules:
+  # One-shot job pods (kubectl run / attach / logs / cp / delete)
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/attach"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create", "get"]
+  # Helm release management + isDeployed fallback
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets", "serviceaccounts", "services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: multiflexi-executor-binding
+  namespace: multiflexi
+subjects:
+  - kind: ServiceAccount
+    name: multiflexi-executor
+    namespace: multiflexi
+roleRef:
+  kind: Role
+  name: multiflexi-executor-role
+  apiGroup: rbac.authorization.k8s.io
