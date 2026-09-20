@@ -1,3 +1,16 @@
+multiflexi-executor (1.18.1) unstable; urgency=medium
+
+  * Fix Kubernetes artifact collection: copy app_artifacts path patterns from
+    pod /tmp into host MULTIFLEXI_TMP for Job::runEnd() (not FileStore)
+  * Fix Kubernetes and Podman executor logo() data URIs with valid embedded SVG
+    base64 (matches Docker executor pattern)
+  * Install executor SVG icons under usr/share/multiflexi/images/ for the web UI
+  * Improve Kubernetes executor for Helm-optional runs, quiet side commands, and
+    MULTIFLEXI_K8S_NAMESPACE; add packaged RBAC manifest and deployment readme
+  * Improve Docker executor with --rm env-file one-shot container runs
+
+ -- Vítězslav Dvořák <info@vitexsoftware.cz>  Sun, 20 Sep 2026 21:00:00 +0200
+
 multiflexi-executor (1.18.0) unstable; urgency=medium
 
   * Add Phase 2 credential availability gate before performJob(): checks each

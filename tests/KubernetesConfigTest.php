@@ -134,7 +134,11 @@ class KubernetesConfigTest extends TestCase
     {
         $this->assertNotEmpty(\MultiFlexi\Executor\Kubernetes::name());
         $this->assertNotEmpty(\MultiFlexi\Executor\Kubernetes::description());
-        $this->assertStringStartsWith('data:image/svg+xml;base64,', \MultiFlexi\Executor\Kubernetes::logo());
+        $logo = \MultiFlexi\Executor\Kubernetes::logo();
+        $this->assertStringStartsWith('data:image/svg+xml;base64,', $logo);
+        $decoded = base64_decode(substr($logo, \strlen('data:image/svg+xml;base64,')), true);
+        $this->assertIsString($decoded);
+        $this->assertStringContainsString('<svg', $decoded);
     }
 
     public function testHelmNamespaceHelper(): void
