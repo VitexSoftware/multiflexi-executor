@@ -2,46 +2,31 @@ MultiFlexi Executor Kubernetes helper package
 =============================================
 
 This package provides the Kubernetes executor class for MultiFlexi and
-ships a ready-to-apply RBAC manifest for the ``multiflexi`` namespace.
+ships a ready-to-apply RBAC manifest for the multiflexi namespace.
 
-Requirements
-------------
+Quick install path (see full docs for details)
+----------------------------------------------
 
-* ``kubectl`` in ``$PATH``
-* ``helm`` (v3+) in ``$PATH`` when applications declare a ``helmchart``
-* A valid kubeconfig readable by the ``multiflexi`` daemon user
+1. apt install multiflexi-executor multiflexi-executor-k8s
+2. Install kubectl (and helm if applications use helmchart)
+3. kubectl create namespace multiflexi
+4. kubectl apply -f /usr/share/multiflexi/k8s/multiflexi-executor-rbac.yaml
+5. Mint a kubeconfig for ServiceAccount multiflexi-executor and install it::
 
-RBAC installation
------------------
+     sudo mkdir -p /var/lib/multiflexi/.kube
+     sudo install -o multiflexi -g multiflexi -m 0600 \
+       ./multiflexi-executor.kubeconfig \
+       /var/lib/multiflexi/.kube/config
 
-Create the namespace (once)::
+6. Add to /etc/multiflexi/multiflexi.env::
 
-  kubectl create namespace multiflexi
+     KUBECONFIG=/var/lib/multiflexi/.kube/config
+     MULTIFLEXI_K8S_NAMESPACE=multiflexi
 
-Apply the packaged Role / RoleBinding / ServiceAccount::
+7. systemctl restart multiflexi-executor
 
-  kubectl apply -f /usr/share/multiflexi/k8s/multiflexi-executor-rbac.yaml
+8. Set runtemplate executor=Kubernetes; application needs ociimage
+   (helmchart and artifacts are optional)
 
-Generate a kubeconfig for ServiceAccount ``multiflexi-executor`` and install
-it for the daemon user (example for clusters that still support SA secrets)::
-
-  sudo mkdir -p /var/lib/multiflexi/.kube
-  # create a token-based kubeconfig for SA multiflexi-executor, then:
-  sudo install -o multiflexi -g multiflexi -m 0600 ./multiflexi-executor.kubeconfig \
-    /var/lib/multiflexi/.kube/config
-
-Configuration
--------------
-
-* ``KUBECONFIG`` – path to kubeconfig (default ``~/.kube/config``)
-* ``MULTIFLEXI_K8S_NAMESPACE`` – override the target namespace
-  (otherwise Helm chart namespace ``multiflexi``, or the cluster default)
-
-Application fields used at runtime:
-
-* ``ociimage`` (required) – container image for ``kubectl run``
-* ``helmchart`` (optional) – when set, Helm upgrade --install runs first
-* ``artifacts`` (optional) – comma-separated paths inside the pod; every
-  path is copied with ``kubectl cp`` and stored in the job file store
-
-See https://multiflexi.eu/ for the full Kubernetes integration guide.
+Full guide: https://multiflexi.eu/ (Kubernetes Integration) or the
+multiflexi-doc-en source file integrations/kubernetes.rst.
