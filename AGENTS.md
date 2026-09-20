@@ -103,19 +103,21 @@ Notes for future modifications
 Kubernetes executor (src/MultiFlexi/Executor/Kubernetes.php)
 
 - Extends Native, implements executor interface
-- Executes jobs as one-shot Kubernetes pods via `kubectl run --restart=Never --attach`
-- **Config derivation**: `kubernetesConfig()` reconstructs k8s config from existing DB fields (helmchart, name, artifacts) — no dedicated kubernetes JSON column needed
+- Executes jobs as one-shot Kubernetes pods via `kubectl run --restart=Never`
+- **Without artifacts**: `--attach --rm` streams stdout/stderr
+- **With artifacts** (application.json `artifacts[]` → `app_artifacts`): non-attach pod, exit marker + brief sleep so `kubectl cp` works; remaps host `MULTIFLEXI_TMP` to `/tmp` in the pod; copies matching files into host `MULTIFLEXI_TMP` for `Job::runEnd()` → `artifacts` table
+- **Config derivation**: `kubernetesConfig()` reconstructs k8s config from helmchart + app_artifacts (legacy `apps.artifacts` column as fallback)
 - **Helm pre-deploy** (optional): When `helmchart` is set, runs `helm upgrade --install` if the release is not yet deployed; without `helmchart`, only the one-shot pod is launched
 - **Namespace**: `MULTIFLEXI_K8S_NAMESPACE` env overrides Helm namespace (default `multiflexi` when Helm is used)
 - **commandline()**: Overridden to return the actual kubectl command string (not the raw app executable)
-- **setJob()**: Overridden to skip file-path env vars (host paths meaningless inside pod)
+- **setJob()**: Overridden to skip file-path env vars (host paths meaningless inside pod); uses ConfigField::getCode()
 - **Side commands**: Helm/status/cp/delete use `runQuietCommand()` so they do not pollute job stdout or overwrite the job Process
-- **storeLogs()**: Fetches pod logs via `kubectl logs --tail=1000` when the pod is kept for artifact collection
-- **collectArtifacts()**: Copies *every* comma-separated path from the app `artifacts` field via `kubectl cp`, stores each in MultiFlexi FileStore
+- **storeLogs()**: Fetches pod logs via `kubectl logs --tail=10000` after artifact-mode runs
+- **collectArtifacts()**: Lists pod `/tmp`, matches `app_artifacts.path` patterns, `kubectl cp` into host `MULTIFLEXI_TMP` (Job::runEnd stores into `artifacts` table — not FileStore)
 - **RBAC**: `k8s/multiflexi-executor-rbac.yaml` shipped by `multiflexi-executor-k8s` to `/usr/share/multiflexi/k8s/`
 - **logo()**: Returns Kubernetes wheel SVG (base64-encoded)
 - Requires: kubectl, valid kubeconfig, app with ociimage set; helm only when helmchart is set
-- Tests: tests/KubernetesConfigTest.php validates config derivation, helpers, and job I/O preservation
+- Tests: tests/KubernetesConfigTest.php validates config derivation, path remap, helpers, and job I/O preservation
 
 Azure Container Instances executor (src/MultiFlexi/Executor/Azure.php)
 

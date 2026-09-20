@@ -22,8 +22,9 @@ use Symfony\Component\Process\Process;
  *
  * Flow:
  * 1. Optional Helm pre-deploy when the application has a helmchart configured
- * 2. One-shot pod via `kubectl run --restart=Never --attach`
- * 3. Optional artifact collection via `kubectl cp` for every path in the app's artifacts field
+ * 2. One-shot pod via `kubectl run --restart=Never` (--attach or hold-for-cp)
+ * 3. Optional artifact collection via `kubectl cp` for every path pattern in
+ *    application.json `artifacts` / `app_artifacts` into host MULTIFLEXI_TMP
  * 4. Pod cleanup (unless keepPodOnFailure and the job failed)
  *
  * Namespace resolution order:
@@ -37,6 +38,10 @@ class Kubernetes extends Native implements \MultiFlexi\executor
     private string $jobStdout = '';
     private string $jobStderr = '';
     private ?int $jobExitCode = null;
+    /** @var array<string, string> Env field code → original host path remapped for the pod */
+    private array $remappedHostPaths = [];
+
+    private const CONTAINER_TMP = '/tmp';
 
     /**
      * Store pod logs after job completion via `kubectl logs`.
@@ -50,22 +55,7 @@ class Kubernetes extends Native implements \MultiFlexi\executor
         $kubernetes = $this->kubernetesConfig();
         $helmConfig = \is_array($kubernetes['helm'] ?? null) ? $kubernetes['helm'] : [];
         $namespace = $this->resolveNamespace($helmConfig);
-        $namespaceFlag = $namespace ? '--namespace='.escapeshellarg($namespace) : '';
-
-        $logsCmd = sprintf(
-            'kubectl --kubeconfig=%s %s logs %s --tail=1000',
-            escapeshellarg($this->kubeconfig),
-            $namespaceFlag,
-            escapeshellarg($this->podName),
-        );
-
-        $logsProcess = $this->runQuietCommand(trim($logsCmd), 60);
-
-        if ($logsProcess->isSuccessful()) {
-            $this->addOutput($logsProcess->getOutput(), 'success');
-        } else {
-            $this->addStatusMessage('Failed to fetch pod logs: '.$logsProcess->getErrorOutput(), 'warning');
-        }
+        $this->capturePodLogs($namespace, $this->podName);
     }
 
     public static function description(): string
@@ -108,7 +98,7 @@ class Kubernetes extends Native implements \MultiFlexi\executor
         foreach ($jobFiles as $file) {
             $this->addStatusMessage(sprintf(
                 'Skipping file-path env var %s for Kubernetes execution (host path not available in pod)',
-                $file->getKey(),
+                $file->getCode(),
             ), 'warning');
         }
     }
@@ -158,9 +148,9 @@ class Kubernetes extends Native implements \MultiFlexi\executor
                 }
 
                 if (Process::ERR === $type) {
-                    $this->addOutput($buffer, 'error');
+                    $this->addOutput($buffer, 'stderr');
                 } else {
-                    $this->addOutput($buffer, 'success');
+                    $this->addOutput($buffer, 'stdout');
                 }
             });
         } catch (\Exception $exc) {
@@ -171,14 +161,20 @@ class Kubernetes extends Native implements \MultiFlexi\executor
     }
 
     /**
-     * Launch job in Kubernetes using `kubectl run --restart=Never --attach`.
-     * Uses ~/.kube/config or the KUBECONFIG env var.
+     * Launch job in Kubernetes using `kubectl run --restart=Never`.
+     *
+     * Without artifacts: `--attach --rm` streams output directly.
+     * With artifacts (app.json ``artifacts`` / ``app_artifacts``): pod is kept
+     * Running briefly after the command so `kubectl cp` can read files
+     * (exec into Succeeded pods is impossible). Copied files land in
+     * ``MULTIFLEXI_TMP`` for ``Job::runEnd()`` → ``artifacts`` table.
      */
     public function launchJob(): void
     {
         $this->jobExitCode = 1;
         $this->jobStdout = '';
         $this->jobStderr = '';
+        $this->remappedHostPaths = [];
 
         if (\MultiFlexi\Application::doesBinaryExist('kubectl') === false) {
             $this->addStatusMessage('kubectl binary is not available in PATH', 'error');
@@ -199,6 +195,10 @@ class Kubernetes extends Native implements \MultiFlexi\executor
         $kubernetes = $this->kubernetesConfig();
         $helmConfig = \is_array($kubernetes['helm'] ?? null) ? $kubernetes['helm'] : [];
         $artifactConfig = \is_array($kubernetes['artifacts'] ?? null) ? $kubernetes['artifacts'] : [];
+        $artifactEnabled = self::artifactEnabled($artifactConfig);
+
+        // Host MULTIFLEXI_TMP paths are invalid inside the pod
+        $this->remapHostTempPathsForContainer();
 
         $cmd = $this->executable();
         $params = $this->cmdparams();
@@ -211,7 +211,6 @@ class Kubernetes extends Native implements \MultiFlexi\executor
 
         $namespace = $this->resolveNamespace($helmConfig);
 
-        // Helm pre-deploy only when a chart is configured; otherwise run the one-shot pod alone
         if (self::shouldRunHelm($helmConfig)) {
             if ($this->isDeployed($kubernetes, $namespace, $helmConfig) === false) {
                 if ($this->runHelmPreDeploy($helmConfig, $kubeconfig) === false) {
@@ -230,34 +229,40 @@ class Kubernetes extends Native implements \MultiFlexi\executor
 
         $envString = $envFlags ? implode(' ', $envFlags) : '';
         $namespaceFlag = $namespace ? '--namespace='.escapeshellarg($namespace) : '';
-        $artifactEnabled = self::artifactEnabled($artifactConfig);
-        $rmFlag = $artifactEnabled ? '' : '--rm';
 
-        $command = sprintf(
-            'kubectl --kubeconfig=%s run %s --restart=Never --image=%s %s %s --attach %s -- %s %s',
-            escapeshellarg($kubeconfig),
-            escapeshellarg($podName),
-            escapeshellarg($image),
-            $namespaceFlag,
-            $envString,
-            $rmFlag,
-            escapeshellarg($cmd),
-            $params,
-        );
-
-        $this->setDataValue('commandline', $command);
         $this->addStatusMessage('Kubernetes job launch: '.$podName);
 
-        $exit = $this->launch(trim($command));
-
-        $this->jobStdout = $this->process?->getOutput() ?? '';
-        $this->jobStderr = $this->process?->getErrorOutput() ?? '';
-        $this->jobExitCode = $exit;
-
         if ($artifactEnabled) {
-            $this->storeLogs();
-            $this->collectArtifacts($artifactConfig, $namespace, $podName);
-            $this->cleanupPod($namespace, $podName, (bool) ($artifactConfig['keepPodOnFailure'] ?? false), (int) ($exit ?? 1));
+            $this->launchJobWithArtifacts(
+                $kubeconfig,
+                $podName,
+                $image,
+                $namespaceFlag,
+                $envString,
+                $cmd,
+                $params,
+                $artifactConfig,
+                $namespace,
+            );
+            $this->restoreRemappedHostPaths();
+        } else {
+            $command = sprintf(
+                'kubectl --kubeconfig=%s run %s --restart=Never --image=%s %s %s --attach --rm -- %s %s',
+                escapeshellarg($kubeconfig),
+                escapeshellarg($podName),
+                escapeshellarg($image),
+                $namespaceFlag,
+                $envString,
+                escapeshellarg($cmd),
+                $params,
+            );
+
+            $this->setDataValue('commandline', $command);
+            $exit = $this->launch(trim($command));
+            $this->jobStdout = $this->process?->getOutput() ?? '';
+            $this->jobStderr = $this->process?->getErrorOutput() ?? '';
+            $this->jobExitCode = $exit;
+            $this->restoreRemappedHostPaths();
         }
 
         $this->addStatusMessage('Kubernetes job finished: '.($this->jobExitCode === 0 ? 'OK' : 'exit '.$this->jobExitCode));
@@ -350,8 +355,8 @@ class Kubernetes extends Native implements \MultiFlexi\executor
 
     /**
      * Reconstruct kubernetes config from existing DB fields and sensible defaults.
-     * No dedicated kubernetes JSON column is needed — helmchart, ociimage, and artifacts
-     * columns provide all the information required.
+     * Artifact paths come from ``app_artifacts`` (application.json ``artifacts``)
+     * with a fallback to the legacy comma-separated ``apps.artifacts`` column.
      *
      * @return array<string, mixed>
      */
@@ -359,8 +364,7 @@ class Kubernetes extends Native implements \MultiFlexi\executor
     {
         $app = $this->job->getApplication();
         $helmChart = (string) ($app->getDataValue('helmchart') ?? '');
-        $artifactsRaw = $app->getDataValue('artifacts');
-        $artifactPaths = self::parseArtifactPaths($artifactsRaw);
+        $artifactPaths = $this->loadAppArtifactPaths($app);
 
         $config = [
             'artifacts' => [
@@ -386,6 +390,40 @@ class Kubernetes extends Native implements \MultiFlexi\executor
         ];
 
         return $config;
+    }
+
+    /**
+     * Artifact path patterns from app_artifacts (preferred) or legacy apps.artifacts.
+     *
+     * @return list<string>
+     */
+    private function loadAppArtifactPaths(\MultiFlexi\Application $app): array
+    {
+        $appId = $app->getMyKey();
+
+        if ($appId) {
+            try {
+                $rows = $app->getFluentPDO()
+                    ->from('app_artifacts')
+                    ->where('app_id', $appId)
+                    ->fetchAll();
+
+                if (\is_array($rows) && $rows !== []) {
+                    $paths = array_values(array_filter(
+                        array_map(static fn ($row): string => trim((string) ($row['path'] ?? '')), $rows),
+                        static fn (string $p): bool => $p !== '',
+                    ));
+
+                    if ($paths !== []) {
+                        return $paths;
+                    }
+                }
+            } catch (\Throwable $exc) {
+                $this->addStatusMessage('Could not load app_artifacts: '.$exc->getMessage(), 'debug');
+            }
+        }
+
+        return self::parseArtifactPaths($app->getDataValue('artifacts'));
     }
 
     /**
@@ -580,6 +618,183 @@ class Kubernetes extends Native implements \MultiFlexi\executor
     }
 
     /**
+     * Remap host MULTIFLEXI_TMP (and env values under it) to CONTAINER_TMP in the pod.
+     * Artifact definitions (application.json) describe produced files; this only
+     * makes host-sanitized write paths usable inside the container.
+     */
+    private function remapHostTempPathsForContainer(): void
+    {
+        $hostTmp = rtrim(\MultiFlexi\Defaults::$MULTIFLEXI_TMP, '/');
+        $containerTmp = self::CONTAINER_TMP;
+
+        $tmpField = $this->environment->getFieldByCode('MULTIFLEXI_TMP');
+
+        if ($tmpField && (string) $tmpField->getValue() !== '') {
+            $this->remappedHostPaths['MULTIFLEXI_TMP'] = (string) $tmpField->getValue();
+            $tmpField->setValue($containerTmp);
+            $this->addStatusMessage(sprintf('Remapping MULTIFLEXI_TMP → %s for Kubernetes pod', $containerTmp), 'info');
+        }
+
+        foreach ($this->environment as $code => $field) {
+            if ($code === 'MULTIFLEXI_TMP') {
+                continue;
+            }
+
+            $value = (string) $field->getValue();
+
+            if ($value === '') {
+                continue;
+            }
+
+            if (!str_starts_with($value, $hostTmp.'/') && $value !== $hostTmp) {
+                continue;
+            }
+
+            $this->remappedHostPaths[$code] = $value;
+            $containerPath = $containerTmp.'/'.basename($value);
+            $field->setValue($containerPath);
+            $this->addStatusMessage(sprintf('Remapping %s %s → %s for Kubernetes pod', $code, $value, $containerPath), 'info');
+        }
+    }
+
+    /**
+     * Restore env fields remapped for the pod so Job::runEnd() sees host paths.
+     */
+    private function restoreRemappedHostPaths(): void
+    {
+        foreach ($this->remappedHostPaths as $code => $original) {
+            $field = $this->environment->getFieldByCode($code);
+
+            if ($field) {
+                $field->setValue($original);
+            }
+        }
+
+        $this->remappedHostPaths = [];
+    }
+
+    /**
+     * Run without --attach, hold the pod Running after the command so kubectl cp works.
+     *
+     * @param array<string, mixed> $artifactConfig
+     */
+    private function launchJobWithArtifacts(
+        string $kubeconfig,
+        string $podName,
+        string $image,
+        string $namespaceFlag,
+        string $envString,
+        string $cmd,
+        string $params,
+        array $artifactConfig,
+        ?string $namespace,
+    ): void {
+        $inner = trim($cmd.($params !== '' ? ' '.$params : ''));
+        $script = $inner.'; ec=$?; printf \'%s\' "$ec" > '.self::CONTAINER_TMP.'/mf-exit; sleep 180; exit $ec';
+
+        $command = sprintf(
+            'kubectl --kubeconfig=%s run %s --restart=Never --image=%s %s %s --command -- /bin/sh -c %s',
+            escapeshellarg($kubeconfig),
+            escapeshellarg($podName),
+            escapeshellarg($image),
+            $namespaceFlag,
+            $envString,
+            escapeshellarg($script),
+        );
+
+        $this->setDataValue('commandline', $command);
+
+        $create = $this->runQuietCommand(trim($command), 120);
+
+        if ($create->getExitCode() !== 0) {
+            $this->addStatusMessage('Failed to create Kubernetes pod: '.$create->getErrorOutput(), 'error');
+            $this->jobExitCode = $create->getExitCode() ?? 1;
+            $this->jobStderr = $create->getErrorOutput();
+
+            return;
+        }
+
+        $waitCmd = sprintf(
+            'kubectl --kubeconfig=%s %s wait --for=condition=Ready --timeout=180s pod/%s',
+            escapeshellarg($kubeconfig),
+            $namespaceFlag,
+            escapeshellarg($podName),
+        );
+        $this->runQuietCommand(trim($waitCmd), 200);
+
+        $this->jobExitCode = $this->waitForExitMarker($namespace, $podName, 600);
+        $this->capturePodLogs($namespace, $podName);
+        $this->collectArtifacts($artifactConfig, $namespace, $podName);
+        $this->cleanupPod($namespace, $podName, (bool) ($artifactConfig['keepPodOnFailure'] ?? false), (int) ($this->jobExitCode ?? 1));
+    }
+
+    /**
+     * Poll until /tmp/mf-exit appears inside the pod, then return its contents as exit code.
+     */
+    private function waitForExitMarker(?string $namespace, string $podName, int $timeoutSeconds): int
+    {
+        $deadline = time() + $timeoutSeconds;
+        $namespaceFlag = $namespace ? '--namespace='.escapeshellarg($namespace) : '';
+        $marker = self::CONTAINER_TMP.'/mf-exit';
+
+        while (time() < $deadline) {
+            $testCmd = sprintf(
+                'kubectl --kubeconfig=%s %s exec %s -- test -f %s',
+                escapeshellarg($this->kubeconfig ?? ''),
+                $namespaceFlag,
+                escapeshellarg($podName),
+                escapeshellarg($marker),
+            );
+            $test = $this->runQuietCommand(trim($testCmd), 30);
+
+            if ($test->getExitCode() === 0) {
+                $catCmd = sprintf(
+                    'kubectl --kubeconfig=%s %s exec %s -- cat %s',
+                    escapeshellarg($this->kubeconfig ?? ''),
+                    $namespaceFlag,
+                    escapeshellarg($podName),
+                    escapeshellarg($marker),
+                );
+                $cat = $this->runQuietCommand(trim($catCmd), 30);
+                $raw = trim($cat->getOutput());
+
+                return is_numeric($raw) ? (int) $raw : 1;
+            }
+
+            sleep(2);
+        }
+
+        $this->addStatusMessage('Timed out waiting for job exit marker in pod '.$podName, 'error');
+
+        return 1;
+    }
+
+    private function capturePodLogs(?string $namespace, string $podName): void
+    {
+        $namespaceFlag = $namespace ? '--namespace='.escapeshellarg($namespace) : '';
+        $logsCmd = sprintf(
+            'kubectl --kubeconfig=%s %s logs %s --tail=10000',
+            escapeshellarg($this->kubeconfig ?? ''),
+            $namespaceFlag,
+            escapeshellarg($podName),
+        );
+
+        $logsProcess = $this->runQuietCommand(trim($logsCmd), 60);
+
+        if ($logsProcess->isSuccessful()) {
+            $out = $logsProcess->getOutput();
+            $this->jobStdout = $out;
+            if ($out !== '') {
+                $this->addOutput($out, 'stdout');
+            }
+        } else {
+            $err = $logsProcess->getErrorOutput();
+            $this->addStatusMessage('Failed to fetch pod logs: '.$err, 'warning');
+            $this->jobStderr = $err;
+        }
+    }
+
+    /**
      * @param array<string, mixed> $artifactConfig
      *
      * @return list<string>
@@ -592,77 +807,124 @@ class Kubernetes extends Native implements \MultiFlexi\executor
             return array_values($paths);
         }
 
-        // Backward compatible single outputPath
+        // Backward compatible single outputPath (application.json kubernetes.artifacts)
         $single = (string) ($artifactConfig['outputPath'] ?? '');
 
         return $single !== '' ? [$single] : [];
     }
 
     /**
-     * Copy every configured artifact path from the pod into FileStore.
+     * Copy files matching application artifact path patterns from the pod into
+     * host MULTIFLEXI_TMP so Job::runEnd() / Application::getResultFiles() can
+     * store them in the artifacts table (not FileStore).
      *
      * @param array<string, mixed> $artifactConfig
      */
     private function collectArtifacts(array $artifactConfig, ?string $namespace, string $podName): void
     {
-        $paths = self::artifactPaths($artifactConfig);
+        $patterns = self::artifactPaths($artifactConfig);
 
-        if ($paths === []) {
+        if ($patterns === []) {
             $this->addStatusMessage('Artifact extraction enabled, but no artifact paths are configured', 'warning');
 
             return;
         }
 
-        $artifactDir = sys_get_temp_dir().'/multiflexi-artifacts/'.($this->job->getMyKey() ?? time());
+        $hostTmp = \MultiFlexi\Defaults::$MULTIFLEXI_TMP;
 
-        if (is_dir($artifactDir) === false) {
-            mkdir($artifactDir, 0o775, true);
+        if (is_dir($hostTmp) === false) {
+            mkdir($hostTmp, 0o775, true);
         }
 
-        $usedFields = [];
+        $podFiles = $this->listPodDirectory($namespace, $podName, self::CONTAINER_TMP);
+        $copied = [];
 
-        foreach ($paths as $index => $path) {
-            $baseName = basename($path);
-            $targetFile = $artifactDir.'/'.$index.'-'.$baseName;
+        foreach ($podFiles as $file) {
+            if ($file === '' || $file === 'mf-exit' || isset($copied[$file])) {
+                continue;
+            }
+
+            if (!self::matchesArtifactPattern($file, $patterns)) {
+                continue;
+            }
+
+            $podPath = self::CONTAINER_TMP.'/'.$file;
+            $targetFile = $hostTmp.'/'.$file;
 
             $copyCmd = sprintf(
                 'kubectl --kubeconfig=%s %s cp %s %s',
                 escapeshellarg($this->kubeconfig ?? ''),
                 $namespace ? '--namespace='.escapeshellarg($namespace) : '',
-                escapeshellarg($podName.':'.$path),
+                escapeshellarg($podName.':'.$podPath),
                 escapeshellarg($targetFile),
             );
 
             $copyProcess = $this->runQuietCommand(trim($copyCmd), 120);
 
             if ($copyProcess->getExitCode() !== 0) {
-                $this->addStatusMessage('Artifact copy failed for '.$path.': '.$copyProcess->getErrorOutput(), 'warning');
+                $this->addStatusMessage('Artifact copy failed for '.$podPath.': '.$copyProcess->getErrorOutput(), 'warning');
 
                 continue;
             }
 
-            $this->addStatusMessage('Artifact copied to '.$targetFile, 'success');
+            $copied[$file] = true;
+            $this->addStatusMessage('Artifact copied to '.$targetFile.' (will be stored by Job::runEnd)', 'success');
+        }
 
-            $field = $baseName !== '' ? $baseName : 'artifact';
+        if ($copied === []) {
+            $this->addStatusMessage('No artifact files matched patterns ['.implode(', ', $patterns).'] in '.self::CONTAINER_TMP, 'warning');
+        }
+    }
 
-            if (isset($usedFields[$field])) {
-                $field = $field.'-'.$index;
+    /**
+     * @param list<string> $patterns
+     */
+    private static function matchesArtifactPattern(string $filename, array $patterns): bool
+    {
+        foreach ($patterns as $pattern) {
+            $pattern = trim($pattern);
+
+            if ($pattern === '') {
+                continue;
             }
 
-            $usedFields[$field] = true;
+            if ($filename === $pattern || $filename === basename($pattern)) {
+                return true;
+            }
 
-            try {
-                $fileStore = new \MultiFlexi\FileStore();
-
-                if ($fileStore->storeFileForJob($field, $targetFile, $baseName !== '' ? $baseName : 'artifact', $this->job) === true) {
-                    $this->addStatusMessage('Artifact stored in file store for job: '.$field, 'success');
-                } else {
-                    $this->addStatusMessage('Failed to store artifact into file store: '.$field, 'warning');
-                }
-            } catch (\Exception $exc) {
-                $this->addStatusMessage('Exception storing artifact '.$field.': '.$exc->getMessage(), 'warning');
+            if (@preg_match('/'.$pattern.'/', $filename) === 1) {
+                return true;
             }
         }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function listPodDirectory(?string $namespace, string $podName, string $dir): array
+    {
+        $namespaceFlag = $namespace ? '--namespace='.escapeshellarg($namespace) : '';
+        $lsCmd = sprintf(
+            'kubectl --kubeconfig=%s %s exec %s -- ls -1 %s',
+            escapeshellarg($this->kubeconfig ?? ''),
+            $namespaceFlag,
+            escapeshellarg($podName),
+            escapeshellarg($dir),
+        );
+
+        $ls = $this->runQuietCommand(trim($lsCmd), 60);
+
+        if ($ls->getExitCode() !== 0) {
+            $this->addStatusMessage('Could not list '.$dir.' in pod: '.$ls->getErrorOutput(), 'warning');
+
+            return [];
+        }
+
+        $files = preg_split('/\r\n|\r|\n/', trim($ls->getOutput())) ?: [];
+
+        return array_values(array_filter($files, static fn (string $f): bool => $f !== ''));
     }
 
     private function cleanupPod(?string $namespace, string $podName, bool $keepPodOnFailure, int $exitCode): void
@@ -674,7 +936,7 @@ class Kubernetes extends Native implements \MultiFlexi\executor
         }
 
         $deleteCmd = sprintf(
-            'kubectl --kubeconfig=%s %s delete pod %s --ignore-not-found=true',
+            'kubectl --kubeconfig=%s %s delete pod %s --ignore-not-found=true --wait=false',
             escapeshellarg($this->kubeconfig ?? ''),
             $namespace ? '--namespace='.escapeshellarg($namespace) : '',
             escapeshellarg($podName),

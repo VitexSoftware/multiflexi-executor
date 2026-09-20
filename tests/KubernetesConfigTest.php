@@ -178,6 +178,51 @@ class KubernetesConfigTest extends TestCase
         $this->assertSame([], $method->invoke(null, []));
     }
 
+    public function testContainerArtifactPathUsesBasenameUnderTmp(): void
+    {
+        $method = new \ReflectionMethod(\MultiFlexi\Executor\Kubernetes::class, 'matchesArtifactPattern');
+        $method->setAccessible(true);
+
+        $this->assertTrue($method->invoke(null, 'env_report.json', ['env_report.json']));
+        $this->assertTrue($method->invoke(null, 'env_report.json', ['.*\\.json']));
+        $this->assertTrue($method->invoke(null, 'out.csv', ['/tmp/out.csv']));
+        $this->assertFalse($method->invoke(null, 'other.txt', ['env_report.json']));
+    }
+
+    public function testRemapHostTempPathsRestoresOriginals(): void
+    {
+        $executor = $this->makeExecutor('', 'App', 'env_report.json');
+        $hostTmp = $this->hostMultiflexiTmp();
+        $env = new \MultiFlexi\ConfigFields('test');
+
+        $tmpField = new \MultiFlexi\ConfigField('MULTIFLEXI_TMP', 'string', 'MULTIFLEXI_TMP', '');
+        $tmpField->setValue($hostTmp);
+        $env->addField($tmpField);
+
+        $outField = new \MultiFlexi\ConfigField('OUTPUT_JSON', 'string', 'OUTPUT_JSON', '');
+        $outField->setValue($hostTmp.'/env_report.json');
+        $env->addField($outField);
+
+        $ref = new \ReflectionClass($executor);
+        $envProp = $ref->getProperty('environment');
+        $envProp->setAccessible(true);
+        $envProp->setValue($executor, $env);
+
+        $remap = $ref->getMethod('remapHostTempPathsForContainer');
+        $remap->setAccessible(true);
+        $remap->invoke($executor);
+
+        $this->assertSame('/tmp', $env->getFieldByCode('MULTIFLEXI_TMP')->getValue());
+        $this->assertSame('/tmp/env_report.json', $env->getFieldByCode('OUTPUT_JSON')->getValue());
+
+        $restore = $ref->getMethod('restoreRemappedHostPaths');
+        $restore->setAccessible(true);
+        $restore->invoke($executor);
+
+        $this->assertSame($hostTmp, $env->getFieldByCode('MULTIFLEXI_TMP')->getValue());
+        $this->assertSame($hostTmp.'/env_report.json', $env->getFieldByCode('OUTPUT_JSON')->getValue());
+    }
+
     public function testResolveNamespacePrefersEnv(): void
     {
         $executor = $this->makeExecutor('oci://chart', 'App', '');
@@ -247,9 +292,21 @@ class KubernetesConfigTest extends TestCase
         return $method->invoke($executor);
     }
 
+    private function hostMultiflexiTmp(): string
+    {
+        if (method_exists(\MultiFlexi\Defaults::class, 'init')) {
+            \MultiFlexi\Defaults::init();
+        } else {
+            new \MultiFlexi\Defaults();
+        }
+
+        return rtrim(\MultiFlexi\Defaults::$MULTIFLEXI_TMP, '/');
+    }
+
     private function makeExecutor(string $helmChart, string $appName, string $artifacts): \MultiFlexi\Executor\Kubernetes
     {
         $app = $this->createMock(\MultiFlexi\Application::class);
+        $app->method('getMyKey')->willReturn(0);
         $app->method('getDataValue')
             ->willReturnCallback(static function (string $key) use ($helmChart, $appName, $artifacts) {
                 return match ($key) {
