@@ -1,0 +1,33 @@
+MultiFlexi Executor Docker helper package
+=========================================
+
+This package provides the Docker executor class for MultiFlexi. It requires
+Docker Engine on the host and adds the ``multiflexi`` user to the ``docker``
+group (when both exist).
+
+Quick install path
+------------------
+
+1. Install Docker Engine and start the daemon::
+
+     sudo apt-get install -y docker.io
+     sudo systemctl enable --now docker
+
+2. Install packages::
+
+     sudo apt-get install -y multiflexi-executor multiflexi-executor-docker
+
+3. Confirm group membership and restart the daemon::
+
+     id multiflexi
+     sudo systemctl restart multiflexi-executor
+     sudo -u multiflexi docker info >/dev/null
+
+4. Optional settings in ``/etc/multiflexi/multiflexi.env``::
+
+     # MULTIFLEXI_DOCKER_NETWORK=mynet
+     # MULTIFLEXI_DOCKER_PULL=always
+
+5. Set runtemplate executor to ``Docker``; application needs ``ociimage``.
+
+Full guide: multiflexi-doc-en ``source/integrations/docker-executor.rst``.

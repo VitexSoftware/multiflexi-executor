@@ -1,3 +1,4 @@
+debian/multiflexi-executor-docker.readme usr/share/doc/multiflexi-executor-docker/
 Containerfile                          usr/share/multiflexi-executor/
 src/MultiFlexi/Executor/Docker.php     usr/share/php/MultiFlexi/Executor/
 multiflexi-executor-docker.svg usr/share/icons/hicolor/scalable/apps/

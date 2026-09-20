@@ -130,3 +130,14 @@ Azure Container Instances executor (src/MultiFlexi/Executor/Azure.php)
 - Config via env vars: AZURE_RESOURCE_GROUP (required), AZURE_LOCATION, AZURE_CPU, AZURE_MEMORY
 - Requires: Azure CLI (`az`), authenticated session, app with ociimage set
 - Tests: tests/AzureTest.php validates config defaults and usableForApp logic
+
+Docker executor (src/MultiFlexi/Executor/Docker.php)
+
+- Extends Native, implements executor interface
+- Executes jobs as one-shot containers via `docker run --rm --env-file … --entrypoint …`
+- **setJob()**: Skips host file-path env vars (meaningless inside container)
+- **Env file**: Written from job environment for `--env-file`, deleted after the run
+- **Config via env**: MULTIFLEXI_DOCKER_NETWORK (optional `--network`), MULTIFLEXI_DOCKER_PULL (optional pull before run)
+- **Package**: `multiflexi-executor-docker` postinst adds `multiflexi` to group `docker`
+- Requires: Docker Engine, app with ociimage set
+- Tests: tests/DockerTest.php
