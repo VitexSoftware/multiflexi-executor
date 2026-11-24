@@ -169,6 +169,34 @@ class ParallelDaemonTest extends TestCase
         $this->assertEmpty($jobs, 'All completed jobs should be reaped in a single pass');
     }
 
+    public function testFailureCallbackGetsOnlyFailedJobs(): void
+    {
+        $jobs = [
+            1 => ['process' => $this->mockProcess(running: false, exitCode: 0), 'jobId' => 10, 'runtemplateId' => 1],
+            2 => ['process' => $this->mockProcess(running: false, exitCode: 255, stderr: "PHP Fatal error: x\nStack trace"), 'jobId' => 20, 'runtemplateId' => 2],
+            3 => ['process' => $this->mockProcess(running: true), 'jobId' => 30, 'runtemplateId' => 3],
+        ];
+        $calls = [];
+
+        DaemonHelper::reapCompletedJobs($jobs, static function (int $jobId, int $exitCode, string $reason) use (&$calls): void {
+            $calls[] = [$jobId, $exitCode, $reason];
+        });
+
+        $this->assertSame([[20, 255, 'PHP Fatal error: x']], $calls);
+        $this->assertSame([3], array_keys($jobs));
+    }
+
+    public function testFailureCallbackExceptionDoesNotStopTheDaemon(): void
+    {
+        $jobs = [1 => ['process' => $this->mockProcess(running: false, exitCode: 255), 'jobId' => 10, 'runtemplateId' => 1]];
+
+        DaemonHelper::reapCompletedJobs($jobs, static function (): void {
+            throw new \RuntimeException('database gone');
+        });
+
+        $this->assertEmpty($jobs);
+    }
+
     public function testEmptyArrayHandledGracefully(): void
     {
         $jobs = [];

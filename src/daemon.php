@@ -125,6 +125,15 @@ if ($maxParallel > 0) {
 $runningJobs = [];
 $shutdown = false;
 
+$finalizeCrashed = static function (int $jobId, int $exitCode, string $reason): void {
+    $job = new \MultiFlexi\Job($jobId);
+
+    // Older multiflexi-core does not have it
+    if (method_exists($job, 'reportCrashed')) {
+        $job->reportCrashed($exitCode, $reason);
+    }
+};
+
 // Graceful shutdown on SIGTERM / SIGINT: stop launching new jobs and let
 // running ones complete.
 if (\function_exists('pcntl_signal')) {
@@ -150,7 +159,7 @@ do {
     }
 
     // Collect finished subprocesses before trying to launch more.
-    DaemonHelper::reapCompletedJobs($runningJobs);
+    DaemonHelper::reapCompletedJobs($runningJobs, $finalizeCrashed);
 
     if (!$shutdown) {
         // How many new jobs may we start this cycle?
@@ -234,7 +243,7 @@ if (!empty($runningJobs)) {
     error_log(sprintf('Shutdown: waiting for %d running job(s) to complete…', \count($runningJobs)));
 
     while (!empty($runningJobs)) {
-        DaemonHelper::reapCompletedJobs($runningJobs);
+        DaemonHelper::reapCompletedJobs($runningJobs, $finalizeCrashed);
         sleep(1);
     }
 }

@@ -1,3 +1,10 @@
+multiflexi-executor (1.18.3) unstable; urgency=medium
+
+  * Daemon: finalize jobs whose process crashed (fatal error, signal) instead
+    of leaving them unfinished forever (needs multiflexi-core >= 2.11.5).
+
+ -- vitex <info@vitexsoftware.cz>  Wed, 25 Nov 2026 01:20:00 +0100
+
 multiflexi-executor (1.18.2) unstable; urgency=medium
 
   * Podman and Fake executors: use Job accessors; direct access to the protected

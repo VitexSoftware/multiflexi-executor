@@ -90,7 +90,7 @@ class DaemonHelper
      *
      * @param array<int, array{process: Process, jobId: int, runtemplateId: int}> $runningJobs Passed by reference
      */
-    public static function reapCompletedJobs(array &$runningJobs): void
+    public static function reapCompletedJobs(array &$runningJobs, ?callable $onFailure = null): void
     {
         foreach ($runningJobs as $key => $jobInfo) {
             if (!$jobInfo['process']->isRunning()) {
@@ -102,6 +102,16 @@ class DaemonHelper
 
                     if ($stderr !== '') {
                         error_log('Job #'.$jobInfo['jobId'].' stderr: '.$stderr);
+                    }
+
+                    // A process that died without recording its result must not
+                    // leave the job unfinished (and invisible to monitoring).
+                    if ($onFailure !== null) {
+                        try {
+                            $onFailure((int) $jobInfo['jobId'], $exitCode, strtok($stderr, "\n") ?: '');
+                        } catch (\Throwable $e) {
+                            error_log(sprintf('Cannot finalize job #%d: %s', $jobInfo['jobId'], $e->getMessage()));
+                        }
                     }
                 }
 
