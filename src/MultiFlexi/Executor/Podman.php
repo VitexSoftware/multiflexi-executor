@@ -86,6 +86,6 @@ MULTIFLEXI_EXECUTOR_LOGO
     {
         file_put_contents($this->envFile(), $this->job->envFile());
 
-        return 'run --env-file '.$this->envFile().' '.$this->job->application->getDataValue('ociimage');
+        return 'run --env-file '.$this->envFile().' '.$this->job->getApplication()->getDataValue('ociimage');
     }
 }

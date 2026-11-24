@@ -50,7 +50,7 @@ class Fake extends \MultiFlexi\CommonExecutor implements \MultiFlexi\executor
 
     public function executable()
     {
-        return $this->job->application->getDataValue('executable');
+        return $this->job->getApplication()->getDataValue('executable');
     }
 
     public function cmdparams()
@@ -81,9 +81,9 @@ class Fake extends \MultiFlexi\CommonExecutor implements \MultiFlexi\executor
     {
         $this->commandline = $this->commandline();
         $this->setDataValue('commandline', $this->commandline);
-        $this->addStatusMessage('Job launch: '.$this->job->application->getDataValue('name').'@'.$this->job->company->getDataValue('name').' : '.$this->job->runTemplate->getRecordName().' Runtemplate: #'.$this->job->runTemplate->getMyKey());
+        $this->addStatusMessage('Job launch: '.$this->job->getApplication()->getDataValue('name').'@'.$this->job->getCompany()->getDataValue('name').' : '.$this->job->getRuntemplate()->getRecordName().' Runtemplate: #'.$this->job->getRuntemplate()->getMyKey());
         $this->launch($this->commandline);
-        $this->addStatusMessage('Job launch finished: '.$this->executable().'@'.$this->job->application->getDataValue('name').' '.$this->process->getExitCodeText());
+        $this->addStatusMessage('Job launch finished: '.$this->executable().'@'.$this->job->getApplication()->getDataValue('name').' '.$this->process->getExitCodeText());
     }
 
     public function runJob(): void

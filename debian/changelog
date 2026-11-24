@@ -1,3 +1,11 @@
+multiflexi-executor (1.18.2) unstable; urgency=medium
+
+  * Podman and Fake executors: use Job accessors; direct access to the protected
+    Job::$application/company/runTemplate is a fatal error.
+  * debian/Jenkinsfile: one workspace per distro branch.
+
+ -- vitex <info@vitexsoftware.cz>  Wed, 25 Nov 2026 00:30:00 +0100
+
 multiflexi-executor (1.18.1) unstable; urgency=medium
 
   * Fix Kubernetes artifact collection: copy app_artifacts path patterns from
