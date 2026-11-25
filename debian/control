@@ -17,7 +17,7 @@ Package: multiflexi-executor
 Architecture: all
 Depends:
  ${misc:Depends},
- multiflexi-sqlite (>= 2.4.1) | multiflexi-mysql (>= 2.4.1) | multiflexi-pgsql (>= 2.4.1), ${phpcomposer:Debian-require}
+ multiflexi-sqlite (>= 2.4.1) | multiflexi-mysql (>= 2.4.1) | multiflexi-pgsql (>= 2.4.1), php-vitexsoftware-multiflexi-core (>= 2.12.0~), ${phpcomposer:Debian-require}
 Suggests: multiflexi-cli, multiflexi-executor-docker
 Description: execute MultiFlexi jobs
  Execute once scheduled job in MultiFlexi and store its

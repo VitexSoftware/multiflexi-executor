@@ -118,6 +118,13 @@ if ($jobId > 0) {
         $jobber->addStatusMessage(sprintf('Executing existing job #%d', $jobId));
     }
 
+    // A disabled company runs no jobs, not even those queued before it was disabled
+    if ($jobber->denyWhenCompanyDisabled()) {
+        fwrite(fopen('php://stderr', 'wb'), sprintf('Job #%d was not launched: company is disabled'.\PHP_EOL, $jobId));
+
+        exit(Job::EXIT_DENIED);
+    }
+
     // Phase 2 credential availability gate: check each assigned credential
     // before allowing the job to run. Unknown state (no check implemented) never blocks.
     /** @var array<string,\MultiFlexi\CredentialCheckResult> $availabilityCache */

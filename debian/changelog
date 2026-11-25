@@ -1,3 +1,9 @@
+multiflexi-executor (1.18.4) unstable; urgency=medium
+
+  * Close queued jobs of a disabled company without launching them.
+
+ -- vitex <info@vitexsoftware.cz>  Wed, 25 Nov 2026 02:30:00 +0100
+
 multiflexi-executor (1.18.3) unstable; urgency=medium
 
   * Daemon: finalize jobs whose process crashed (fatal error, signal) instead
